@@ -33,7 +33,7 @@
     --border: #1a1a1a; 
     --text: #e2ddd5; 
     --muted: #555; 
-    --overlay-bg: rgba(0,0,0,0.85); 
+    --overlay-bg: rgba(0,0,0,0.9); 
     --scroll-thumb: #333; 
     --switch-bg: #222;
 
@@ -51,7 +51,7 @@
     --border: #eeeeee; 
     --text: #222222; 
     --muted: #999; 
-    --overlay-bg: rgba(0,0,0,0.5); 
+    --overlay-bg: rgba(255,255,255,0.9); 
     --scroll-thumb: #ddd; 
     --switch-bg: #e0e0e0;
 
@@ -127,12 +127,13 @@
   }
   .meta-row .val { text-align: right; color: inherit; } 
 
-  /* --- 调整后的热力图样式 --- */
+  /* --- 无字纯净热力图样式（放大无边距） --- */
   .heatmap-card {
     background: transparent;
     border: none;
+    border-radius: 0;
     padding: 0;
-    margin-bottom: 20px;
+    margin-bottom: 18px;
     width: 100%;
   }
 
@@ -141,7 +142,6 @@
     overflow-x: auto;
     scrollbar-width: none;
     width: 100%;
-    padding: 4px 0;
   }
   .heatmap-grid-container::-webkit-scrollbar { display: none; }
 
@@ -150,7 +150,7 @@
     grid-template-rows: repeat(7, 13px);
     grid-auto-flow: column;
     gap: 4px;
-    margin: 0 auto 0 0;
+    margin: 0;
   }
 
   .heatmap-cell {
@@ -352,7 +352,7 @@
   .confirm-overlay { z-index: 1000; align-items: center; justify-content: center; }
   .lock-overlay { z-index: 20000; align-items: center; justify-content: center; flex-direction: column; }
 
-  .editor-box { background: var(--surface); width: 100%; max-width: 700px; padding: 24px 32px calc(40px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); border-radius: 16px 16px 0 0; max-height: 90vh; overflow-y: auto; }
+  .editor-box { background: var(--surface); width: 100%; max-width: 700px; padding: 24px 32px calc(40px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); border-radius: 12px 12px 0 0; max-height: 90vh; overflow-y: auto; }
   
   .field input, .field textarea { width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border); padding: 12px 0; font-family: inherit; font-size: 0.88rem; color: var(--text); outline: none; }
   .field textarea { min-height: 160px; line-height: 2; }
@@ -560,12 +560,12 @@
 
 <div class="editor-overlay" id="overlay">
   <div class="editor-box" onclick="event.stopPropagation()">
-    <div style="display:flex;justify-content:space-between;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">
       <span style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--muted)">NEW ENTRY</span>
       <button id="closeEditorAction" style="background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;">✕</button>
     </div>
 
-    <!-- 移至弹窗顶部的无字热力图 -->
+    <!-- 纯图形无文字热力图 -->
     <div class="heatmap-card">
       <div class="heatmap-grid-container" id="heatmapGridContainer">
         <div class="heatmap-grid" id="heatmapGrid"></div>
@@ -1171,7 +1171,7 @@
     });
   }
 
-  // 点击写一条：打开弹窗并渲染顶部热力图
+  // 点击写一条：打开弹窗并渲染纯无字热力图
   document.getElementById("writeBtnAction").onclick = () => {
     document.getElementById('overlay').classList.add('open');
     renderHeatmap();
