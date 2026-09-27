@@ -127,6 +127,22 @@
   }
   .meta-row .val { text-align: right; color: inherit; } 
 
+  /* 年份切换按钮样式 */
+  .year-nav-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    padding: 0 4px;
+    transition: color 0.2s, opacity 0.2s;
+    user-select: none;
+  }
+  .year-nav-btn:hover {
+    color: var(--accent);
+  }
+
   /* --- 单一年份专属热力图区域 (固定高度、仅横向滚动、仅展示当年) --- */
   .heatmap-card {
     background: transparent;
@@ -561,8 +577,13 @@
 
 <div class="editor-overlay" id="overlay">
   <div class="editor-box" onclick="event.stopPropagation()">
-    <div style="display:flex;justify-content:space-between;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)">
-      <span id="editor-year-title" style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--muted)">2026 YEAR</span>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+      <!-- 带有左右切换箭头的年份导航控件 -->
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="year-nav-btn" id="prevYearBtn" title="上一年">&lt;</button>
+        <span id="editor-year-title" style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted);font-weight:bold;">2026 YEAR</span>
+        <button class="year-nav-btn" id="nextYearBtn" title="下一年">&gt;</button>
+      </div>
       <button id="closeEditorAction" style="background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;">✕</button>
     </div>
 
@@ -653,6 +674,8 @@
   let currentActionId = null;
   let currentActionType = null; 
   let allEntries = []; 
+  // 全局记录热力图当前选中的年份
+  let currentHeatmapYear = new Date().getFullYear();
 
   function showToast(msg) { 
     const t = document.getElementById('status-toast'); 
@@ -708,20 +731,23 @@
     localStorage.setItem('my_local_space_data', JSON.stringify(allEntries));
   }
 
-  // --- 修正后的单一年份专属热力图渲染 ---
-  function renderHeatmap() {
+  // --- 动态年份专属热力图渲染 ---
+  function renderHeatmap(targetYear) {
     const card = document.getElementById('heatmapCard');
     if (!card) return;
     card.innerHTML = '';
 
-    const currentYear = new Date().getFullYear();
+    if (targetYear) {
+      currentHeatmapYear = targetYear;
+    }
+
     const yearTitleEl = document.getElementById('editor-year-title');
-    if (yearTitleEl) yearTitleEl.innerText = `${currentYear} YEAR`;
+    if (yearTitleEl) yearTitleEl.innerText = `${currentHeatmapYear} YEAR`;
 
     const dateMap = {};
     allEntries.forEach(e => {
       const d = parseSafeDate(e.date);
-      if (d.getFullYear() === currentYear) {
+      if (d.getFullYear() === currentHeatmapYear) {
         const k = formatDateKey(d);
         if (!dateMap[k]) dateMap[k] = [];
         dateMap[k].push(e);
@@ -731,9 +757,9 @@
     const grid = document.createElement('div');
     grid.className = 'heatmap-grid';
 
-    // 仅取当前年份 1 月 1 日 到 12 月 31 日
-    const startDate = new Date(currentYear, 0, 1);
-    const endDate = new Date(currentYear, 11, 31);
+    // 仅取选中年份的 1 月 1 日 到 12 月 31 日
+    const startDate = new Date(currentHeatmapYear, 0, 1);
+    const endDate = new Date(currentHeatmapYear, 11, 31);
 
     // 计算首个周一
     const startDayOfWeek = (startDate.getDay() + 6) % 7; 
@@ -747,11 +773,11 @@
 
     const currPointer = new Date(firstMonday);
 
-    // 生成当前年份网格
+    // 生成指定年份网格
     for (let col = 0; col < totalCols; col++) {
       for (let row = 0; row < 7; row++) {
         const dateKey = formatDateKey(currPointer);
-        const isTargetYear = currPointer.getFullYear() === currentYear;
+        const isTargetYear = currPointer.getFullYear() === currentHeatmapYear;
 
         const entriesToday = isTargetYear ? (dateMap[dateKey] || []) : [];
         const count = entriesToday.length;
@@ -796,6 +822,15 @@
       card.scrollLeft = card.scrollWidth;
     }, 50);
   }
+
+  // 绑定左右切换年份按钮事件
+  document.getElementById('prevYearBtn').onclick = () => {
+    renderHeatmap(currentHeatmapYear - 1);
+  };
+
+  document.getElementById('nextYearBtn').onclick = () => {
+    renderHeatmap(currentHeatmapYear + 1);
+  };
 
   function jumpToDate(dateKey) {
     const matched = allEntries.find(e => formatDateKey(parseSafeDate(e.date)) === dateKey);
@@ -1198,10 +1233,10 @@
     });
   }
 
-  // 点击写一条：打开弹窗并渲染热力图
+  // 点击写一条：打开弹窗并渲染热力图（默认显示当前年份）
   document.getElementById("writeBtnAction").onclick = () => {
     document.getElementById('overlay').classList.add('open');
-    renderHeatmap();
+    renderHeatmap(new Date().getFullYear());
   };
 
   document.getElementById("closeEditorAction").onclick = () => document.getElementById('overlay').classList.remove('open');
