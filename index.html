@@ -127,38 +127,50 @@
   }
   .meta-row .val { text-align: right; color: inherit; } 
 
-  /* --- 无字纯净热力图样式（自适应多端） --- */
+  /* --- 多端自适应热力图样式 --- */
   .heatmap-card {
     background: transparent;
     border: none;
     border-radius: 0;
     padding: 0;
-    margin-bottom: 18px;
+    margin-bottom: 20px;
     width: 100%;
+    display: flex;
+    justify-content: center;
   }
 
   .heatmap-grid-container {
     display: flex;
-    justify-content: flex-start; /* 窄屏左对齐支持滑动 */
+    justify-content: center;
+    align-items: center;
     overflow-x: auto;
     scrollbar-width: none;
     width: 100%;
-    -webkit-overflow-scrolling: touch;
   }
   .heatmap-grid-container::-webkit-scrollbar { display: none; }
 
+  /* 默认移动端：12 列 × 30 行 (月为列，天为行) */
   .heatmap-grid {
     display: grid;
-    grid-template-rows: repeat(7, 12px);
-    grid-auto-flow: column;
-    gap: 3px;
-    margin: 0 auto; /* 宽屏居中显示 */
+    grid-template-rows: repeat(30, 11px);
+    grid-template-columns: repeat(12, 11px);
+    grid-auto-flow: row;
+    gap: 3.5px;
+    margin: 0 auto;
     padding: 4px 0;
   }
 
+  /* PC 端 (屏幕宽度 > 600px)：30 列 × 12 行 (天为列，月为行) */
+  @media (min-width: 601px) {
+    .heatmap-grid {
+      grid-template-rows: repeat(12, 11px);
+      grid-template-columns: repeat(30, 11px);
+    }
+  }
+
   .heatmap-cell {
-    width: 12px;
-    height: 12px;
+    width: 11px;
+    height: 11px;
     border-radius: 2px;
     background-color: var(--hm-level-0);
     transition: transform 0.15s ease, background-color 0.3s;
@@ -166,7 +178,7 @@
   }
 
   .heatmap-cell:hover {
-    transform: scale(1.35);
+    transform: scale(1.4);
     z-index: 10;
   }
 
@@ -568,7 +580,7 @@
       <button id="closeEditorAction" style="background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;">✕</button>
     </div>
 
-    <!-- 纯图形无文字热力图 -->
+    <!-- 多端自适应热力图 -->
     <div class="heatmap-card">
       <div class="heatmap-grid-container" id="heatmapGridContainer">
         <div class="heatmap-grid" id="heatmapGrid"></div>
@@ -596,7 +608,7 @@
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       const swCode = `
-        const CACHE_NAME = 'mutopia-cache-v2';
+        const CACHE_NAME = 'mutopia-cache-v3';
         const ASSETS_TO_CACHE = [
           './',
           'index.html',
@@ -714,7 +726,7 @@
     localStorage.setItem('my_local_space_data', JSON.stringify(allEntries));
   }
 
-  // --- 纯无字热力图渲染引擎（增加范围至 365 天 + 优化自适应） ---
+  // --- 多端响应式热力图渲染引擎 ---
   function renderHeatmap() {
     const grid = document.getElementById('heatmapGrid');
     if (!grid) return;
@@ -727,55 +739,64 @@
       dateMap[k].push(e);
     });
 
-    const today = new Date();
-    const totalDays = 365; // 扩展到 365 天，兼顾美观与多端铺满
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() - totalDays + 1);
+    const currentYear = new Date().getFullYear();
+    const isDesktop = window.innerWidth > 600; // 离线/实时判断屏幕大小
 
-    const dayOfWeek = startDate.getDay(); 
-    const offset = dayOfWeek === 0 ? 6 : dayOfWeek - 1; 
-    startDate.setDate(startDate.getDate() - offset);
-
-    const dayIterator = new Date(startDate);
-    const endIterator = new Date(today);
-
-    while (dayIterator <= endIterator) {
-      const dateKey = formatDateKey(dayIterator);
-      const entriesToday = dateMap[dateKey] || [];
-      const count = entriesToday.length;
-
-      let level = 0;
-      if (count >= 4) level = 4;
-      else if (count === 3) level = 3;
-      else if (count === 2) level = 2;
-      else if (count === 1) level = 1;
-
-      const cell = document.createElement('div');
-      cell.className = 'heatmap-cell';
-      cell.setAttribute('data-level', level);
-      cell.title = `${dateKey}: ${count} 条记录`;
-
-      if (count > 0) {
-        cell.onclick = () => {
-          document.getElementById('overlay').classList.remove('open');
-          showToast(`${dateKey} 共 ${count} 条记录`);
-          jumpToDate(dateKey);
-        };
-      } else {
-        cell.onclick = () => showToast(`${dateKey}: 暂无记录`);
+    if (isDesktop) {
+      // --- PC端：30列 × 12行 (横向1~30日，纵向1~12月) ---
+      for (let month = 1; month <= 12; month++) {
+        for (let day = 1; day <= 30; day++) {
+          createCell(grid, currentYear, month, day, dateMap);
+        }
       }
-
-      grid.appendChild(cell);
-      dayIterator.setDate(dayIterator.getDate() + 1);
-    }
-
-    const container = document.getElementById('heatmapGridContainer');
-    if (container) {
-      setTimeout(() => {
-        container.scrollLeft = container.scrollWidth;
-      }, 50);
+    } else {
+      // --- 移动端：12列 × 30行 (横向1~12月，纵向1~30日) ---
+      for (let day = 1; day <= 30; day++) {
+        for (let month = 1; month <= 12; month++) {
+          createCell(grid, currentYear, month, day, dateMap);
+        }
+      }
     }
   }
+
+  function createCell(grid, currentYear, month, day, dateMap) {
+    const monthStr = String(month).padStart(2, '0');
+    const dayStr = String(day).padStart(2, '0');
+    const dateKey = `${currentYear}-${monthStr}-${dayStr}`;
+
+    const entriesToday = dateMap[dateKey] || [];
+    const count = entriesToday.length;
+
+    let level = 0;
+    if (count >= 4) level = 4;
+    else if (count === 3) level = 3;
+    else if (count === 2) level = 2;
+    else if (count === 1) level = 1;
+
+    const cell = document.createElement('div');
+    cell.className = 'heatmap-cell';
+    cell.setAttribute('data-level', level);
+    cell.title = `${dateKey}: ${count} 条记录`;
+
+    if (count > 0) {
+      cell.onclick = () => {
+        document.getElementById('overlay').classList.remove('open');
+        showToast(`${dateKey} 共 ${count} 条记录`);
+        jumpToDate(dateKey);
+      };
+    } else {
+      cell.onclick = () => showToast(`${dateKey}: 暂无记录`);
+    }
+
+    grid.appendChild(cell);
+  }
+
+  // 窗口大小改变时自动切换热力图布局
+  window.addEventListener('resize', () => {
+    if (document.getElementById('overlay').classList.contains('open')) {
+      renderHeatmap();
+    }
+  });
 
   function jumpToDate(dateKey) {
     const matched = allEntries.find(e => formatDateKey(parseSafeDate(e.date)) === dateKey);
@@ -1178,7 +1199,7 @@
     });
   }
 
-  // 点击写一条：打开弹窗并渲染热力图
+  // 点击写一条：打开弹窗并响应式渲染热力图
   document.getElementById("writeBtnAction").onclick = () => {
     document.getElementById('overlay').classList.add('open');
     renderHeatmap();
