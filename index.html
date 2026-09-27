@@ -581,7 +581,7 @@
       <!-- 带有左右切换箭头的年份导航控件 -->
       <div style="display:flex;align-items:center;gap:10px;">
         <button class="year-nav-btn" id="prevYearBtn" title="上一年">&lt;</button>
-        <span id="editor-year-title" style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted);font-weight:bold;">2026 YEAR</span>
+        <span id="editor-year-title" style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted);font-weight:normal;">2026</span>
         <button class="year-nav-btn" id="nextYearBtn" title="下一年">&gt;</button>
       </div>
       <button id="closeEditorAction" style="background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;">✕</button>
@@ -742,7 +742,7 @@
     }
 
     const yearTitleEl = document.getElementById('editor-year-title');
-    if (yearTitleEl) yearTitleEl.innerText = `${currentHeatmapYear} YEAR`;
+    if (yearTitleEl) yearTitleEl.innerText = `${currentHeatmapYear}`;
 
     const dateMap = {};
     allEntries.forEach(e => {
