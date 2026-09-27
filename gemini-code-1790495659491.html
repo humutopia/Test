@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Mutopia</title>
+
+<!-- PWA 与应用清单声明 -->
+<link rel="manifest" href="/manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Muto">
+<meta name="theme-color" content="#ffffff" id="themeColorMeta">
+
+<!-- Base64 内嵌白底黑笔图标 -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='120' fill='%23ffffff'/><g transform='translate(96, 96) scale(1.25)'><path d='M170 30 L210 70 L70 210 L30 210 L30 170 Z' fill='none' stroke='%23111111' stroke-width='20' stroke-linejoin='round'/><path d='M130 70 L170 110' stroke='%23111111' stroke-width='20'/><rect x='110' y='160' width='80' height='18' rx='9' fill='%23111111'/><rect x='90' y='195' width='100' height='18' rx='9' fill='%23111111'/><rect x='90' y='195' width='100' height='18' rx='9' fill='%23111111'/></g></svg>">
+
+<link rel="apple-touch-icon" href="/logo.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/logo.png">
+
+<!-- 字体加载 -->
+<link rel="stylesheet" href="https://fonts.font.im/css2?family=Noto+Serif+SC:wght@300;400;500&family=DM+Mono:ital@0;1&display=swap" media="print" onload="this.media='all'">
+
+<style>
+  @import url('https://fonts.cdnfonts.com/css/halimun');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  
+  body.dark { 
+    --bg: #000000; 
+    --surface: #0a0a0a; 
+    --border: #1a1a1a; 
+    --text: #e2ddd5; 
+    --muted: #555; 
+    --overlay-bg: rgba(0,0,0,0.9); 
+    --scroll-thumb: #333; 
+    --switch-bg: #222;
+
+    /* 热力图深色变量 */
+    --hm-level-0: #141414;
+    --hm-level-1: #4a3e20;
+    --hm-level-2: #7e6328;
+    --hm-level-3: #c8a96e;
+    --hm-level-4: #f0d59e;
+  }
+
+  body.light { 
+    --bg: #ffffff; 
+    --surface: #fcfcfc; 
+    --border: #eeeeee; 
+    --text: #222222; 
+    --muted: #999; 
+    --overlay-bg: rgba(255,255,255,0.9); 
+    --scroll-thumb: #ddd; 
+    --switch-bg: #e0e0e0;
+
+    /* 热力图浅色变量 */
+    --hm-level-0: #f2f2f2;
+    --hm-level-1: #f3e7c4;
+    --hm-level-2: #e6ce93;
+    --hm-level-3: #c8a96e;
+    --hm-level-4: #9e7d3b;
+  }
+  
+  :root { --accent: #c8a96e; --accent2: #7eb8a4; }
+
+  body { background: var(--bg); color: var(--text); font-family: 'Noto Serif SC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, serif; min-height: 100vh; padding-bottom: calc(120px + env(safe-area-inset-bottom)); transition: background 0.4s ease; overflow-x: hidden; }
+  
+  header { padding: calc(60px + env(safe-area-inset-top)) 40px 20px; max-width: 700px; margin: 0 auto; display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; }
+  
+  .site-title { 
+    font-family: 'Halimun', 'Brush Script MT', cursive; 
+    font-size: 2.5rem; 
+    font-weight: bold; 
+    color: var(--accent); 
+    line-height: 1.1;
+    word-break: break-all;
+    flex: 1;
+    min-width: 0;
+  }
+
+  @media (max-width: 600px) {
+    header { padding: calc(50px + env(safe-area-inset-top)) 25px 20px; }
+    .site-title { font-size: 1.8rem; }
+    .container { padding: 0 25px; }
+    .search-area, .pinned-area, .email-area, .settings-area { padding: 0 25px !important; }
+    .editor-box { padding: 20px 20px calc(40px + env(safe-area-inset-bottom)) !important; }
+  }
+  
+  .site-meta { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: flex-end; 
+    gap: 4px; 
+    font-family: 'DM Mono', monospace; 
+    font-size: 0.6rem; 
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  .meta-icons {
+    display: flex;
+    justify-content: space-between;
+    width: 100px;
+    margin-bottom: 6px;
+    align-items: center;
+  }
+
+  .meta-trigger { 
+    cursor: pointer; 
+    color: var(--muted); 
+    opacity: 0.5; 
+    transition: 0.3s; 
+    display: flex; 
+    align-items: center;
+  }
+  .meta-trigger:hover, .meta-trigger.active { color: var(--accent); opacity: 1; }
+  .meta-trigger svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 1.8; fill: none; }
+
+  .meta-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr; 
+    width: 100px; 
+    letter-spacing: 0.12em;
+    color: inherit;
+  }
+  .meta-row .val { text-align: right; color: inherit; } 
+
+  /* --- 无字纯净热力图样式（自适应多端） --- */
+  .heatmap-card {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    margin-bottom: 18px;
+    width: 100%;
+  }
+
+  .heatmap-grid-container {
+    display: flex;
+    justify-content: flex-start; /* 窄屏左对齐支持滑动 */
+    overflow-x: auto;
+    scrollbar-width: none;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+  .heatmap-grid-container::-webkit-scrollbar { display: none; }
+
+  .heatmap-grid {
+    display: grid;
+    grid-template-rows: repeat(7, 12px);
+    grid-auto-flow: column;
+    gap: 3px;
+    margin: 0 auto; /* 宽屏居中显示 */
+    padding: 4px 0;
+  }
+
+  .heatmap-cell {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    background-color: var(--hm-level-0);
+    transition: transform 0.15s ease, background-color 0.3s;
+    cursor: pointer;
+  }
+
+  .heatmap-cell:hover {
+    transform: scale(1.35);
+    z-index: 10;
+  }
+
+  .heatmap-cell[data-level="0"] { background-color: var(--hm-level-0); }
+  .heatmap-cell[data-level="1"] { background-color: var(--hm-level-1); }
+  .heatmap-cell[data-level="2"] { background-color: var(--hm-level-2); }
+  .heatmap-cell[data-level="3"] { background-color: var(--hm-level-3); }
+  .heatmap-cell[data-level="4"] { background-color: var(--hm-level-4); }
+
+  .search-area, .pinned-area, .email-area, .settings-area { 
+    max-width: 700px; 
+    margin: -10px auto 20px; 
+    padding: 0 40px;
+    height: 0; 
+    overflow: hidden; 
+    opacity: 0; 
+    transition: all 0.4s ease; 
+    position: relative; 
+  }
+  .search-area.active, .pinned-area.active, .email-area.active, .settings-area.active { height: auto; min-height: 45px; opacity: 1; overflow: visible; }
+  
+  .panel-box-wrapper { 
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    padding: 12px 18px;
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    gap: 10px; 
+  }
+  
+  #inline-search, #inline-email { width: 100%; background: transparent; border: none; font-family: inherit; font-size: 0.85rem; color: var(--text); outline: none; }
+
+  .results-dropdown { 
+    position: absolute; 
+    left: 40px; 
+    right: 40px; 
+    top: 100%;
+    margin-top: 6px;
+    background: var(--surface); 
+    z-index: 100; 
+    border: 1px solid var(--border); 
+    max-height: 300px; 
+    overflow-y: auto; 
+    display: none; 
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5); 
+    border-radius: 4px; 
+  }
+  @media (max-width: 600px) { .results-dropdown { left: 25px; right: 25px; } }
+  .results-dropdown.active { display: block; }
+  
+  .email-card, .settings-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    padding: 12px 16px;
+    font-size: 0.8rem;
+  }
+
+  .pinned-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .setting-icon-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 10px;
+    border-bottom: 1px dashed var(--border);
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.2s ease, opacity 0.2s ease;
+  }
+  .setting-icon-item:last-child { border-bottom: none; }
+  .setting-icon-item:hover { 
+    background: rgba(200, 169, 110, 0.08); 
+  }
+  
+  .setting-item-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.8rem;
+    color: var(--text);
+  }
+  .setting-item-left svg {
+    width: 16px;
+    height: 16px;
+    stroke: var(--accent);
+    stroke-width: 1.8;
+    fill: none;
+    flex-shrink: 0;
+  }
+
+  .switch-toggle {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    background-color: var(--switch-bg);
+    border-radius: 20px;
+    transition: background-color 0.3s ease;
+    flex-shrink: 0;
+    pointer-events: none;
+  }
+
+  .switch-toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background-color: #ffffff;
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+
+  .switch-toggle.active {
+    background-color: var(--accent);
+  }
+
+  .switch-toggle.active::after {
+    transform: translateX(16px);
+  }
+
+  .res-item { padding: 12px 15px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s; }
+  .res-item:last-child { border-bottom: none; }
+  .res-item:hover { background: rgba(200, 169, 110, 0.1); }
+  .res-date { font-family: 'DM Mono'; font-size: 0.55rem; color: var(--accent); }
+  .res-title { font-size: 0.8rem; opacity: 0.8; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .container { max-width: 700px; margin: 0 auto; padding: 0 40px; }
+  
+  .year-group { padding-top: 30px; display: block !important; visibility: visible !important; }
+  
+  .year-row { display: flex; align-items: center; gap: 14px; margin-bottom: 15px; cursor: pointer; user-select: none; }
+  .year-row:hover .year-num { color: var(--accent); }
+  .year-row:hover .year-line { background: var(--accent); opacity: 0.5; }
+  
+  .year-num { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--muted); letter-spacing: 0.18em; transition: color 0.3s; display: flex; align-items: center; gap: 6px; }
+  .year-num::after { content: '▼'; font-size: 0.45rem; opacity: 0.5; transition: transform 0.3s; display: inline-block; }
+  
+  .year-group.is-collapsed .year-num::after { transform: rotate(-90deg); }
+  .year-line { flex: 1; height: 1px; background: var(--border); transition: background 0.3s; }
+  
+  .track { position: relative; padding-left: 32px; display: block; }
+  .track::before { content: ''; position: absolute; left: 0; top: 24px; bottom: 0; width: 1.5px; background: linear-gradient(180deg, var(--accent) 0%, var(--accent2) 60%, transparent 100%); opacity: 0.35; }
+  
+  .year-group.is-collapsed .track { display: none !important; }
+  
+  .entry { position: relative; padding: 26px 0 26px 24px; border-bottom: 1px solid var(--border); opacity: 1 !important; display: block !important; scroll-margin-top: 100px; transition: background 0.6s; }
+  .entry::before { content: ''; position: absolute; left: -4px; top: 33px; width: 7px; height: 7px; border-radius: 50%; background: var(--bg); border: 1.5px solid var(--accent); opacity: 0.65; }
+  .entry.highlight-flash { background: rgba(200, 169, 110, 0.2); }
+  .entry.is-pinned::after { content: 'PINNED'; position: absolute; right: 0; top: 12px; font-family: 'DM Mono'; font-size: 0.45rem; color: var(--accent); letter-spacing: 0.1em; opacity: 0.5; }
+
+  .entry-stamp { font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--accent); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+  .entry-actions { display: flex; gap: 12px; align-items: center; opacity: 0; transition: opacity 0.3s; }
+  .entry:hover .entry-actions { opacity: 1; }
+  .action-btn { color: var(--muted); cursor: pointer; font-size: 0.55rem; padding: 4px 0; }
+  .action-btn:hover { color: var(--accent); }
+  
+  .entry-title { font-size: 0.96rem; font-weight: 500; margin-bottom: 9px; }
+  .entry-body { font-size: 0.86rem; line-height: 2.1; opacity: 0.75; white-space: pre-wrap; text-align: justify; word-break: break-word; }
+  
+  .write-btn { position: fixed; bottom: calc(40px + env(safe-area-inset-bottom)); right: 40px; background: var(--accent); border: none; color: #0f0f0f; font-family: 'DM Mono', monospace; font-size: 0.65rem; padding: 11px 22px; cursor: pointer; border-radius: 2px; z-index: 10; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+  
+  .editor-overlay, .confirm-overlay, .lock-overlay { 
+    display: none; 
+    position: fixed; 
+    inset: 0; 
+    background: var(--overlay-bg); 
+    z-index: 999; 
+    backdrop-filter: blur(8px); 
+    -webkit-backdrop-filter: blur(8px); 
+  }
+  .editor-overlay.open { display: flex; align-items: flex-end; justify-content: center; }
+  .confirm-overlay { z-index: 1000; align-items: center; justify-content: center; }
+  .lock-overlay { z-index: 20000; align-items: center; justify-content: center; flex-direction: column; }
+
+  .editor-box { background: var(--surface); width: 100%; max-width: 700px; padding: 24px 32px calc(40px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); border-radius: 12px 12px 0 0; max-height: 90vh; overflow-y: auto; }
+  
+  .field input, .field textarea { width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border); padding: 12px 0; font-family: inherit; font-size: 0.88rem; color: var(--text); outline: none; }
+  .field textarea { min-height: 160px; line-height: 2; }
+  
+  .btn-save { background: var(--accent); border: none; font-family: 'DM Mono', monospace; font-size: 0.65rem; color: #0f0f0f; padding: 12px 28px; cursor: pointer; border-radius: 2px; margin-top: 16px; width: 100%; transition: 0.3s; }
+
+  .confirm-box, .lock-box { background: var(--surface); border: 1px solid var(--border); padding: 30px; width: 320px; text-align: center; border-radius: 8px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
+  .confirm-txt { font-size: 0.85rem; margin-bottom: 20px; color: var(--text); font-weight: 300; }
+  .confirm-btns { display: flex; justify-content: center; gap: 20px; }
+  .btn-no { color: var(--muted); background:none; border:none; cursor:pointer; font-family: inherit; font-size:0.75rem;}
+  .btn-yes { color: var(--accent); background:none; border:none; cursor:pointer; font-family: inherit; font-size:0.75rem; font-weight:bold; }
+  #status-toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; font-size: 0.7rem; font-family: 'DM Mono', monospace; z-index: 30000; border-radius: 2px; display: none; }
+
+  .btn-action-text { background: none; border: none; font-family: inherit; font-size: 0.72rem; color: var(--accent); cursor: pointer; opacity: 0.85; transition: opacity 0.2s; }
+  .btn-action-text:hover { opacity: 1; }
+
+  .pin-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--accent);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 1.2rem;
+    text-align: center;
+    letter-spacing: 0.5em;
+    padding: 10px 0;
+    margin: 20px 0;
+    outline: none;
+  }
+
+  @media print {
+    body { background: #ffffff !important; color: #000000 !important; padding-bottom: 0 !important; }
+    .meta-icons, .write-btn, .search-area, .pinned-area, .email-area, .settings-area, .editor-overlay, .confirm-overlay, .lock-overlay, #status-toast, .entry-actions { display: none !important; }
+    .year-group.is-collapsed .track { display: block !important; }
+    .entry { page-break-inside: avoid; }
+  }
+
+  [data-netlify-drawers], netlify-drawer, iframe[data-netlify-deploy-id], #netlify-notification-root { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
+</style>
+</head>
+<body class="light">
+<div id="status-toast"></div>
+
+<!-- 锁屏验证弹窗 -->
+<div class="lock-overlay" id="lockOverlay">
+  <div class="lock-box">
+    <div style="font-family:'DM Mono',monospace; font-size:0.75rem; color:var(--accent); letter-spacing:0.1em; margin-bottom:8px;">MUTEO LOCK</div>
+    <div style="font-size:0.8rem; color:var(--muted); margin-bottom:15px;" id="lockPromptText">请输入 PIN 码以解锁应用</div>
+    <input type="password" id="pinCodeInput" class="pin-input" maxlength="6" pattern="[0-9]*" inputmode="numeric" placeholder="••••">
+    <button class="btn-save" id="unlockAppBtn" style="margin-top:5px;">验证解锁</button>
+  </div>
+</div>
+
+<header>
+  <h1 class="site-title">Mutopia</h1>
+  <div class="site-meta">
+    <div class="meta-icons">
+      <!-- 1. 邮箱图标 -->
+      <div class="meta-trigger" id="emailBtn" title="邮箱自动备份配置">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+          <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+        </svg>
+      </div>
+      <!-- 2. 置顶图标 -->
+      <div class="meta-trigger" id="pinBtn" title="查看置顶">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A.5.5 0 0 0 6.36 14L12 14l5.64 0a.5.5 0 0 0 .25-.55l-1.78-.9A2 2 0 0 1 15 10.76V6a3 3 0 0 0-6 0v4.76ZM15 5h-6"></path>
+        </svg>
+      </div>
+      <!-- 3. 检索图标 -->
+      <div class="meta-trigger" id="searchBtn" title="检索记忆">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </div>
+      <!-- 4. 设置图标 -->
+      <div class="meta-trigger" id="settingsBtn" title="系统设置">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </div>
+    </div>
+    <div class="meta-row">
+      <span>TOTAL</span>
+      <span class="val" id="totalCount">00</span>
+    </div>
+    <div class="meta-row">
+      <span>SINCE</span>
+      <span class="val" id="sinceYear">2026</span>
+    </div>
+  </div>
+</header>
+
+<div class="email-area" id="emailArea">
+  <div class="email-card">
+    <div style="padding-bottom: 8px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+      <input id="inline-email" type="email" autocomplete="off" placeholder="接收备份的邮箱 (如 user@qq.com)...">
+      <div style="display: flex; gap: 12px; flex-shrink: 0;">
+        <button class="btn-action-text" id="saveEmailBtn">保存邮箱</button>
+        <button class="btn-action-text" id="manualBackupBtn">备份到邮箱</button>
+      </div>
+    </div>
+    <div id="email-status-tip" style="font-family: 'DM Mono', monospace; font-size:0.68rem; color:var(--muted); opacity:0.85; display:flex; justify-content:space-between; align-items:center; gap: 10px;"></div>
+  </div>
+</div>
+
+<!-- 设置面板 -->
+<div class="settings-area" id="settingsArea">
+  <div class="settings-card">
+    
+    <!-- 1. 暗黑模式 -->
+    <div class="setting-icon-item" id="themeToggleBtnAction">
+      <div class="setting-item-left">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" id="theme-icon-svg">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <span>暗夜模式 (Dark Mode)</span>
+      </div>
+      <div class="switch-toggle" id="themeSwitch"></div>
+    </div>
+
+    <!-- 2. 导出 JSON -->
+    <div class="setting-icon-item" id="exportJsonBtnAction">
+      <div class="setting-item-left">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        <span>导出 JSON 备份数据</span>
+      </div>
+      <div class="switch-toggle" id="exportJsonSwitch"></div>
+    </div>
+
+    <!-- 3. 导入 JSON -->
+    <div class="setting-icon-item" id="importTriggerBtn">
+      <div class="setting-item-left">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <span>导入 JSON 恢复数据</span>
+      </div>
+      <div class="switch-toggle" id="importSwitch"></div>
+      <input type="file" id="fileInput" accept=".json" style="display:none;">
+    </div>
+
+    <!-- 4. 导出 PDF -->
+    <div class="setting-icon-item" id="exportPdfBtnAction">
+      <div class="setting-item-left">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 6 2 18 2 18 9"></polyline>
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+          <rect x="6" y="14" width="12" height="8"></rect>
+        </svg>
+        <span>导出 PDF 打印文档</span>
+      </div>
+      <div class="switch-toggle" id="exportPdfSwitch"></div>
+    </div>
+
+    <!-- 5. 应用安全锁 -->
+    <div class="setting-icon-item" id="appLockToggleBtnAction">
+      <div class="setting-item-left">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <span id="appLockTitle">应用安全锁 (PIN 码)</span>
+      </div>
+      <div class="switch-toggle" id="appLockSwitch"></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="search-area" id="searchArea">
+  <div class="panel-box-wrapper">
+    <input id="inline-search" autocomplete="off" spellcheck="false" placeholder="检索记忆...">
+  </div>
+  <div id="search-results-panel" class="results-dropdown"></div>
+</div>
+
+<div class="pinned-area" id="pinnedArea">
+  <div class="pinned-card">
+    <div id="pinned-results-panel" style="max-height: 250px; overflow-y: auto;"></div>
+  </div>
+</div>
+
+<div class="container" id="timeline"></div>
+
+<button class="write-btn" id="writeBtnAction">＋ 写一条</button>
+
+<div class="editor-overlay" id="overlay">
+  <div class="editor-box" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+      <span style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--muted)">NEW ENTRY</span>
+      <button id="closeEditorAction" style="background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;">✕</button>
+    </div>
+
+    <!-- 纯图形无文字热力图 -->
+    <div class="heatmap-card">
+      <div class="heatmap-grid-container" id="heatmapGridContainer">
+        <div class="heatmap-grid" id="heatmapGrid"></div>
+      </div>
+    </div>
+
+    <div class="field"><input id="inp-title" placeholder="标题 (可选)"></div>
+    <div class="field"><textarea id="inp-body" placeholder="此时此刻的心情..."></textarea></div>
+    <button class="btn-save" id="btn-save-action">保存记录</button>
+  </div>
+</div>
+
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-txt" id="confirmTxt">确定执行此操作吗？</div>
+    <div class="confirm-btns">
+      <button class="btn-no" id="closeConfirmAction">取消</button>
+      <button class="btn-yes" id="confirmActionBtn">确认</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Service Worker 离线加载
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      const swCode = `
+        const CACHE_NAME = 'mutopia-cache-v2';
+        const ASSETS_TO_CACHE = [
+          './',
+          'index.html',
+          'https://fonts.font.im/css2?family=Noto+Serif+SC:wght@300;400;500&family=DM+Mono:ital@0;1&display=swap',
+          'https://fonts.cdnfonts.com/css/halimun'
+        ];
+
+        self.addEventListener('install', (e) => {
+          e.waitUntil(
+            caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE)).then(() => self.skipWaiting())
+          );
+        });
+
+        self.addEventListener('activate', (e) => {
+          e.waitUntil(
+            caches.keys().then((keys) => {
+              return Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)));
+            }).then(() => self.clients.claim())
+          );
+        });
+
+        self.addEventListener('fetch', (e) => {
+          if (e.request.method !== 'GET') return;
+          e.respondWith(
+            caches.match(e.request).then((cachedResponse) => {
+              if (cachedResponse) {
+                fetch(e.request).then((networkResponse) => {
+                  if (networkResponse && networkResponse.status === 200) {
+                    caches.open(CACHE_NAME).then((cache) => cache.put(e.request, networkResponse));
+                  }
+                }).catch(() => {});
+                return cachedResponse;
+              }
+              return fetch(e.request).then((networkResponse) => {
+                if (networkResponse && networkResponse.status === 200) {
+                  const resClone = networkResponse.clone();
+                  caches.open(CACHE_NAME).then((cache) => cache.put(e.request, resClone));
+                }
+                return networkResponse;
+              }).catch(() => {
+                if (e.request.headers.get('accept')?.includes('text/html')) {
+                  return caches.match('./') || caches.match('index.html');
+                }
+              });
+            })
+          );
+        });
+      `;
+
+      try {
+        const blob = new Blob([swCode], { type: 'application/javascript' });
+        const swUrl = URL.createObjectURL(blob);
+        navigator.serviceWorker.register(swUrl).catch(err => console.log("SW Alert:", err));
+      } catch (e) { console.error(e); }
+    });
+  }
+
+  const BACKUP_API_ENDPOINT = "https://mutopia-backup-api.humutopia.workers.dev/";
+
+  let currentActionId = null;
+  let currentActionType = null; 
+  let allEntries = []; 
+
+  function showToast(msg) { 
+    const t = document.getElementById('status-toast'); 
+    if(!t) return;
+    t.innerText = msg; 
+    t.style.display = 'block'; 
+    setTimeout(() => t.style.display = 'none', 2200); 
+  }
+
+  function triggerSwitchPulse(el) {
+    if (!el) return;
+    el.classList.add('active');
+    setTimeout(() => el.classList.remove('active'), 400);
+  }
+
+  function parseSafeDate(rawDate) {
+    if (!rawDate) return new Date();
+    if (typeof rawDate === 'number') {
+      return new Date(rawDate < 10000000000 ? rawDate * 1000 : rawDate);
+    }
+    const d = new Date(rawDate);
+    return isNaN(d.getTime()) ? new Date() : d;
+  }
+
+  function formatDateKey(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  function formatDateStandard(d) {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
+  }
+
+  function loadLocalEntries() {
+    try {
+      const data = localStorage.getItem('my_local_space_data');
+      allEntries = data ? JSON.parse(data) : [];
+      if(!Array.isArray(allEntries)) allEntries = [];
+      allEntries.forEach(e => {
+        const safeD = parseSafeDate(e.date || e.timestamp || e.created_at);
+        e.date = safeD.toISOString();
+      });
+    } catch(e) {
+      allEntries = [];
+    }
+  }
+
+  function saveLocalEntries() {
+    localStorage.setItem('my_local_space_data', JSON.stringify(allEntries));
+  }
+
+  // --- 纯无字热力图渲染引擎（增加范围至 365 天 + 优化自适应） ---
+  function renderHeatmap() {
+    const grid = document.getElementById('heatmapGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const dateMap = {};
+    allEntries.forEach(e => {
+      const k = formatDateKey(parseSafeDate(e.date));
+      if (!dateMap[k]) dateMap[k] = [];
+      dateMap[k].push(e);
+    });
+
+    const today = new Date();
+    const totalDays = 365; // 扩展到 365 天，兼顾美观与多端铺满
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - totalDays + 1);
+
+    const dayOfWeek = startDate.getDay(); 
+    const offset = dayOfWeek === 0 ? 6 : dayOfWeek - 1; 
+    startDate.setDate(startDate.getDate() - offset);
+
+    const dayIterator = new Date(startDate);
+    const endIterator = new Date(today);
+
+    while (dayIterator <= endIterator) {
+      const dateKey = formatDateKey(dayIterator);
+      const entriesToday = dateMap[dateKey] || [];
+      const count = entriesToday.length;
+
+      let level = 0;
+      if (count >= 4) level = 4;
+      else if (count === 3) level = 3;
+      else if (count === 2) level = 2;
+      else if (count === 1) level = 1;
+
+      const cell = document.createElement('div');
+      cell.className = 'heatmap-cell';
+      cell.setAttribute('data-level', level);
+      cell.title = `${dateKey}: ${count} 条记录`;
+
+      if (count > 0) {
+        cell.onclick = () => {
+          document.getElementById('overlay').classList.remove('open');
+          showToast(`${dateKey} 共 ${count} 条记录`);
+          jumpToDate(dateKey);
+        };
+      } else {
+        cell.onclick = () => showToast(`${dateKey}: 暂无记录`);
+      }
+
+      grid.appendChild(cell);
+      dayIterator.setDate(dayIterator.getDate() + 1);
+    }
+
+    const container = document.getElementById('heatmapGridContainer');
+    if (container) {
+      setTimeout(() => {
+        container.scrollLeft = container.scrollWidth;
+      }, 50);
+    }
+  }
+
+  function jumpToDate(dateKey) {
+    const matched = allEntries.find(e => formatDateKey(parseSafeDate(e.date)) === dateKey);
+    if (matched) {
+      jumpToEntry(matched.id);
+    }
+  }
+
+  // --- 应用安全锁 ---
+  const lockOverlay = document.getElementById('lockOverlay');
+  const pinCodeInput = document.getElementById('pinCodeInput');
+  const unlockAppBtn = document.getElementById('unlockAppBtn');
+  const lockPromptText = document.getElementById('lockPromptText');
+  const appLockSwitch = document.getElementById('appLockSwitch');
+  let isSettingPinMode = false; 
+
+  function updateLockStatusUI() {
+    const savedPin = localStorage.getItem('mutopia_app_pin');
+    if (appLockSwitch) {
+      if (savedPin) appLockSwitch.classList.add('active');
+      else appLockSwitch.classList.remove('active');
+    }
+  }
+
+  function checkAppLock() {
+    const savedPin = localStorage.getItem('mutopia_app_pin');
+    if (savedPin) {
+      isSettingPinMode = false;
+      lockPromptText.innerText = "请输入 4~6 位 PIN 码以解锁应用";
+      pinCodeInput.value = '';
+      lockOverlay.style.display = 'flex';
+      setTimeout(() => pinCodeInput.focus(), 200);
+    } else {
+      lockOverlay.style.display = 'none';
+    }
+  }
+
+  unlockAppBtn.onclick = handlePinSubmit;
+  pinCodeInput.onkeyup = (e) => { if (e.key === 'Enter') handlePinSubmit(); };
+
+  function handlePinSubmit() {
+    const val = pinCodeInput.value.trim();
+    const savedPin = localStorage.getItem('mutopia_app_pin');
+
+    if (isSettingPinMode) {
+      if (val.length < 4 || val.length > 6 || !/^\d+$/.test(val)) {
+        showToast("请输入 4~6 位纯数字 PIN 码");
+        return;
+      }
+      localStorage.setItem('mutopia_app_pin', val);
+      lockOverlay.style.display = 'none';
+      updateLockStatusUI();
+      showToast("应用锁定成功");
+      isSettingPinMode = false;
+      return;
+    }
+
+    if (val === savedPin) {
+      lockOverlay.style.display = 'none';
+      pinCodeInput.value = '';
+      showToast("解锁成功");
+    } else {
+      showToast("PIN 码错误，请重试");
+      pinCodeInput.value = '';
+    }
+  }
+
+  document.getElementById('appLockToggleBtnAction').onclick = () => {
+    const savedPin = localStorage.getItem('mutopia_app_pin');
+    settingsArea.classList.remove('active');
+
+    if (savedPin) {
+      localStorage.removeItem('mutopia_app_pin');
+      updateLockStatusUI();
+      showToast("已关闭应用安全锁");
+    } else {
+      isSettingPinMode = true;
+      lockPromptText.innerText = "请设置新的 4~6 位数字 PIN 码";
+      pinCodeInput.value = '';
+      lockOverlay.style.display = 'flex';
+      setTimeout(() => pinCodeInput.focus(), 200);
+    }
+  };
+
+  // --- 自动邮件备份 ---
+  async function triggerEmailBackup(isManual = false) {
+    const userEmail = localStorage.getItem('mutopia_backup_email');
+    if (!userEmail) {
+      if (isManual) showToast("请先配置接收邮箱");
+      return;
+    }
+
+    if (allEntries.length === 0) {
+      if (isManual) showToast("暂无数据可备份");
+      return;
+    }
+
+    if (isManual) showToast("正在发送备份邮件...");
+
+    try {
+      const res = await fetch(BACKUP_API_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to_email: userEmail,
+          backup_date: new Date().toLocaleString('zh-CN'),
+          backup_content: JSON.stringify(allEntries, null, 2)
+        })
+      });
+
+      if (res.ok) {
+        const now = Date.now();
+        localStorage.setItem('mutopia_last_backup_time', now.toString());
+        updateEmailStatusTip();
+        showToast("JSON 备份文件已发送至邮箱！");
+      } else {
+        showToast("发送失败，请检查网络");
+      }
+    } catch (err) {
+      showToast("无法连接到备份服务器");
+    }
+  }
+
+  function checkAndAutoBackup() {
+    const userEmail = localStorage.getItem('mutopia_backup_email');
+    if (!userEmail) return;
+
+    const now = Date.now();
+    let lastBackup = localStorage.getItem('mutopia_last_backup_time');
+
+    if (!lastBackup) {
+      const randomOffsetDays = Math.floor(Math.random() * 7);
+      const initialFakeLastBackup = now - (randomOffsetDays * 86400000);
+      localStorage.setItem('mutopia_last_backup_time', initialFakeLastBackup.toString());
+      lastBackup = initialFakeLastBackup;
+    }
+
+    const daysPassed = (now - Number(lastBackup)) / (1000 * 60 * 60 * 24);
+    if (daysPassed >= 7) {
+      triggerEmailBackup(false);
+    }
+  }
+
+  function updateEmailStatusTip() {
+    const tip = document.getElementById('email-status-tip');
+    const userEmail = localStorage.getItem('mutopia_backup_email');
+    const lastBackup = localStorage.getItem('mutopia_last_backup_time');
+
+    if (!userEmail) {
+      tip.innerHTML = "<span>未设置接收邮箱</span><span>未开启自动备份</span>";
+      return;
+    }
+
+    let lastBackupStr = "暂无备份记录";
+    let nextBackupStr = "即将触发";
+
+    if (lastBackup) {
+      const lastBackupDate = new Date(Number(lastBackup));
+      lastBackupStr = formatDateStandard(lastBackupDate);
+
+      const nextBackupTime = Number(lastBackup) + (7 * 24 * 60 * 60 * 1000);
+      const nextBackupDate = new Date(nextBackupTime);
+      nextBackupStr = formatDateStandard(nextBackupDate);
+    }
+
+    tip.innerHTML = `<span>上次备份: ${lastBackupStr}</span><span>下次备份: ${nextBackupStr}</span>`;
+  }
+
+  function flattenAndNormalizeJson(obj, results = [], depth = 0) {
+    if (!obj || depth > 10) return results;
+    if (Array.isArray(obj)) {
+      obj.forEach(item => flattenAndNormalizeJson(item, results, depth + 1));
+      return results;
+    }
+    if (typeof obj === 'object') {
+      let bodyText = obj.body || obj.content || obj.text || obj.caption || '';
+      let titleText = obj.title || '';
+      
+      if (!bodyText && titleText) {
+        bodyText = titleText;
+        titleText = '';
+      }
+
+      let rawTime = obj.date || obj.timestamp || obj.creation_timestamp || obj.created_at || obj.createTime || obj.time;
+      let d = parseSafeDate(rawTime);
+
+      if (bodyText && typeof bodyText === 'string') {
+        results.push({
+          id: String(obj.id || ('item_' + d.getTime() + '_' + Math.random().toString(36).substring(2,7))),
+          title: String(titleText || ''),
+          body: String(bodyText),
+          date: d.toISOString(),
+          pinned: !!obj.pinned
+        });
+        return results;
+      }
+
+      for (let k in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, k)) {
+          flattenAndNormalizeJson(obj[k], results, depth + 1);
+        }
+      }
+    }
+    return results;
+  }
+
+  // 数据恢复
+  document.getElementById('importTriggerBtn').onclick = () => {
+    triggerSwitchPulse(document.getElementById('importSwitch'));
+    document.getElementById('fileInput').click();
+  };
+  
+  document.getElementById('fileInput').onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const importedRaw = JSON.parse(event.target.result);
+        const parsedEntries = flattenAndNormalizeJson(importedRaw);
+        if (parsedEntries.length > 0) {
+          const existMap = new Map(allEntries.map(item => [item.id, item]));
+          parsedEntries.forEach(item => existMap.set(item.id, item));
+          
+          allEntries = Array.from(existMap.values());
+          saveLocalEntries();
+          renderTimeline();
+          settingsArea.classList.remove('active');
+          showToast(`成功导入合并 ${parsedEntries.length} 条记录`);
+        } else {
+          showToast("未找到有效数据");
+        }
+      } catch (err) {
+        showToast("格式错误，解析失败");
+      }
+      e.target.value = '';
+    };
+    reader.readAsText(file);
+  };
+
+  // 导出 JSON
+  document.getElementById('exportJsonBtnAction').onclick = () => {
+    triggerSwitchPulse(document.getElementById('exportJsonSwitch'));
+    if (allEntries.length === 0) { showToast("暂无可导出数据"); return; }
+    settingsArea.classList.remove('active');
+    
+    const now = new Date();
+    const dateStr = formatDateKey(now);
+    const jsonStr = JSON.stringify(allEntries, null, 2);
+    const jsonBlob = new Blob([jsonStr], { type: 'application/json' });
+    const aJson = document.createElement('a');
+    aJson.href = URL.createObjectURL(jsonBlob);
+    aJson.download = `mutopia_backup_${dateStr}.json`;
+    aJson.click();
+    URL.revokeObjectURL(aJson.href);
+    showToast("JSON 导出成功");
+  };
+
+  // 导出 PDF
+  document.getElementById('exportPdfBtnAction').onclick = () => {
+    triggerSwitchPulse(document.getElementById('exportPdfSwitch'));
+    if (allEntries.length === 0) { showToast("暂无可导出数据"); return; }
+    settingsArea.classList.remove('active');
+    setTimeout(() => {
+      document.querySelectorAll('.year-group').forEach(el => el.classList.remove('is-collapsed'));
+      window.print();
+    }, 150);
+  };
+
+  const searchArea = document.getElementById('searchArea');
+  const pinnedArea = document.getElementById('pinnedArea');
+  const emailArea = document.getElementById('emailArea');
+  const settingsArea = document.getElementById('settingsArea');
+
+  const searchBtn = document.getElementById('searchBtn');
+  const pinBtn = document.getElementById('pinBtn');
+  const emailBtn = document.getElementById('emailBtn');
+  const settingsBtn = document.getElementById('settingsBtn');
+
+  const searchInput = document.getElementById('inline-search');
+  const emailInput = document.getElementById('inline-email');
+  const searchPanel = document.getElementById('search-results-panel');
+  const pinnedPanel = document.getElementById('pinned-results-panel');
+
+  emailBtn.onclick = (e) => {
+    e.stopPropagation();
+    searchArea.classList.remove('active');
+    pinnedArea.classList.remove('active');
+    settingsArea.classList.remove('active');
+    const active = emailArea.classList.toggle('active');
+    if(active) {
+      emailInput.value = localStorage.getItem('mutopia_backup_email') || '';
+      updateEmailStatusTip();
+    }
+  };
+
+  settingsBtn.onclick = (e) => {
+    e.stopPropagation();
+    searchArea.classList.remove('active');
+    pinnedArea.classList.remove('active');
+    emailArea.classList.remove('active');
+    settingsArea.classList.toggle('active');
+  };
+
+  document.getElementById('saveEmailBtn').onclick = () => {
+    const email = emailInput.value.trim();
+    if (!email) { showToast("请输入有效的邮箱"); return; }
+    localStorage.setItem('mutopia_backup_email', email);
+    updateEmailStatusTip();
+    showToast("邮箱保存成功");
+  };
+
+  document.getElementById('manualBackupBtn').onclick = () => {
+    triggerEmailBackup(true);
+  };
+
+  searchBtn.onclick = (e) => {
+    e.stopPropagation();
+    pinnedArea.classList.remove('active');
+    emailArea.classList.remove('active');
+    settingsArea.classList.remove('active');
+    const active = searchArea.classList.toggle('active');
+    if(active) setTimeout(() => searchInput.focus(), 200);
+  };
+
+  pinBtn.onclick = (e) => {
+    e.stopPropagation();
+    searchArea.classList.remove('active');
+    emailArea.classList.remove('active');
+    settingsArea.classList.remove('active');
+    const active = pinnedArea.classList.toggle('active');
+    if(active) renderPinnedInline();
+  };
+
+  document.addEventListener('click', (e) => {
+    if (!searchArea.contains(e.target) && !searchBtn.contains(e.target)) {
+      searchArea.classList.remove('active');
+      searchPanel.classList.remove('active');
+    }
+    if (!pinnedArea.contains(e.target) && !pinBtn.contains(e.target)) {
+      pinnedArea.classList.remove('active');
+    }
+    if (!emailArea.contains(e.target) && !emailBtn.contains(e.target)) {
+      emailArea.classList.remove('active');
+    }
+    if (!settingsArea.contains(e.target) && !settingsBtn.contains(e.target)) {
+      settingsArea.classList.remove('active');
+    }
+  });
+
+  const jumpToEntry = (id) => {
+    const target = document.getElementById(`entry-${id}`);
+    if(target) {
+      const parentGroup = target.closest('.year-group');
+      if (parentGroup && parentGroup.classList.contains('is-collapsed')) {
+        parentGroup.classList.remove('is-collapsed');
+      }
+      setTimeout(() => {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.classList.add('highlight-flash');
+        setTimeout(() => target.classList.remove('highlight-flash'), 2000);
+      }, 100);
+      searchArea.classList.remove('active');
+      pinnedArea.classList.remove('active');
+    }
+  };
+
+  searchInput.oninput = (e) => {
+    const kw = e.target.value.trim().toLowerCase();
+    searchPanel.innerHTML = '';
+    if(!kw) { searchPanel.classList.remove('active'); return; }
+    const res = allEntries.filter(p => (p.title && p.title.toLowerCase().includes(kw)) || (p.body && p.body.toLowerCase().includes(kw)));
+    if(res.length > 0) {
+      searchPanel.classList.add('active');
+      res.forEach(p => {
+        const item = document.createElement('div');
+        item.className = 'res-item';
+        const d = parseSafeDate(p.date);
+        item.innerHTML = `<div class="res-date">${d.toLocaleDateString()}</div><div class="res-title">${escapeHtml(p.title || p.body.substring(0,25))}</div>`;
+        item.onclick = () => jumpToEntry(p.id);
+        searchPanel.appendChild(item);
+      });
+    } else { searchPanel.classList.remove('active'); }
+  };
+
+  function renderPinnedInline() {
+    pinnedPanel.innerHTML = '';
+    const pinned = allEntries.filter(p => p.pinned);
+    if(pinned.length === 0) {
+      pinnedPanel.innerHTML = '<div style="padding:15px 0; font-size:0.72rem; color:var(--muted); text-align:center; font-family:\'DM Mono\'">VOID_ (暂无置顶内容)</div>';
+      return;
+    }
+    pinned.forEach(p => {
+      const item = document.createElement('div');
+      item.className = 'res-item';
+      const d = parseSafeDate(p.date);
+      item.innerHTML = `<div class="res-date">${d.toLocaleDateString()}</div><div class="res-title">${escapeHtml(p.title || p.body.substring(0,25))}</div>`;
+      item.onclick = () => jumpToEntry(p.id);
+      pinnedPanel.appendChild(item);
+    });
+  }
+
+  // 点击写一条：打开弹窗并渲染热力图
+  document.getElementById("writeBtnAction").onclick = () => {
+    document.getElementById('overlay').classList.add('open');
+    renderHeatmap();
+  };
+
+  document.getElementById("closeEditorAction").onclick = () => document.getElementById('overlay').classList.remove('open');
+  document.getElementById("overlay").onclick = (e) => {
+    if(e.target === document.getElementById("overlay")) document.getElementById('overlay').classList.remove('open');
+  };
+
+  document.getElementById("btn-save-action").onclick = () => {
+    const title = document.getElementById('inp-title').value.trim();
+    const body = document.getElementById('inp-body').value.trim();
+    if (!body) return;
+
+    const newEntry = {
+      id: 'item_' + Date.now(),
+      title,
+      body,
+      date: new Date().toISOString(),
+      pinned: false
+    };
+
+    allEntries.unshift(newEntry);
+    saveLocalEntries();
+    renderTimeline();
+
+    document.getElementById('overlay').classList.remove('open');
+    document.getElementById('inp-title').value = ''; 
+    document.getElementById('inp-body').value = ''; 
+    showToast("已保存记录");
+
+    checkAndAutoBackup();
+  };
+
+  window.askAction = (id, type, currentPinned = false) => { 
+    currentActionId = id; 
+    currentActionType = type;
+    const txt = type === 'delete' ? "确定删除此记录吗？" : (currentPinned ? "取消置顶？" : "确定置顶吗？");
+    document.getElementById('confirmTxt').innerText = txt;
+    document.getElementById('confirmOverlay').style.display = 'flex'; 
+  };
+  
+  document.getElementById('closeConfirmAction').onclick = () => { document.getElementById('confirmOverlay').style.display = 'none'; currentActionId = null; };
+  
+  document.getElementById('confirmActionBtn').onclick = () => {
+    if(currentActionType === 'delete') {
+      allEntries = allEntries.filter(e => e.id !== currentActionId);
+      showToast("已删除");
+    } else if(currentActionType === 'pin') {
+      const target = allEntries.find(e => e.id === currentActionId);
+      if(target) target.pinned = !target.pinned;
+      showToast("已更新");
+    }
+    saveLocalEntries();
+    renderTimeline();
+    document.getElementById('confirmOverlay').style.display = 'none';
+  };
+
+  function renderTimeline() {
+    allEntries.sort((a, b) => parseSafeDate(b.date).getTime() - parseSafeDate(a.date).getTime());
+
+    const totalVal = document.getElementById('totalCount');
+    if(totalVal) totalVal.innerText = String(allEntries.length).padStart(2, '0');
+
+    if(allEntries.length > 0) {
+      const earliestDate = parseSafeDate(allEntries[allEntries.length - 1].date);
+      document.getElementById('sinceYear').innerText = earliestDate.getFullYear() || '2026';
+    }
+    
+    const tl = document.getElementById('timeline'); 
+    tl.innerHTML = ''; 
+    
+    if (allEntries.length === 0) {
+      tl.innerHTML = '<div style="color:var(--muted); font-size:0.8rem; padding:40px 0; text-align:center;">暂无任何历史记录，点击右下角写入第一条吧</div>';
+      return;
+    }
+
+    const byYear = {};
+    allEntries.forEach(p => {
+      let d = parseSafeDate(p.date);
+      let y = d.getFullYear();
+      if (!byYear[y]) byYear[y] = []; 
+      byYear[y].push(p);
+    });
+    
+    const sortedYears = Object.keys(byYear).sort((a,b) => Number(b) - Number(a));
+
+    sortedYears.forEach(year => {
+      const group = document.createElement('div'); 
+      group.className = 'year-group';
+      group.setAttribute('data-year', year);
+
+      group.innerHTML = `<div class="year-row" onclick="this.parentElement.classList.toggle('is-collapsed')"><span class="year-num">${year}</span><div class="year-line"></div></div>`;
+      
+      const track = document.createElement('div'); 
+      track.className = 'track';
+      
+      byYear[year].forEach(p => {
+        const d = parseSafeDate(p.date); 
+        const timeStr = `${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        
+        const item = document.createElement('div'); 
+        item.className = `entry ${p.pinned ? 'is-pinned' : ''}`; 
+        item.id = `entry-${p.id}`;
+        
+        item.innerHTML = `
+          <div class="entry-stamp">
+            <div>${timeStr}</div>
+            <div class="entry-actions">
+              <div class="action-btn" onclick="event.stopPropagation(); askAction('${p.id}', 'pin', ${p.pinned})">${p.pinned ? 'UNPIN' : 'PIN'}</div>
+              <div class="action-btn" onclick="event.stopPropagation(); askAction('${p.id}', 'delete')">DELETE</div>
+            </div>
+          </div>
+          ${p.title ? `<div class="entry-title">${escapeHtml(p.title)}</div>` : ''}
+          <div class="entry-body">${escapeHtml(p.body)}</div>
+        `;
+        track.appendChild(item);
+      });
+      group.appendChild(track); 
+      tl.appendChild(group);
+    });
+
+    if(pinnedArea.classList.contains('active')) renderPinnedInline();
+  }
+
+  function escapeHtml(str) {
+    return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function init() {
+    loadLocalEntries();
+    renderTimeline();
+    updateLockStatusUI();
+    checkAppLock();
+    checkAndAutoBackup();
+  }
+
+  init();
+
+  const themeToggleBtnAction = document.getElementById('themeToggleBtnAction');
+  const themeMeta = document.getElementById('themeColorMeta');
+  const themeSwitch = document.getElementById('themeSwitch');
+  const themeIconSvg = document.getElementById('theme-icon-svg');
+
+  function applyTheme(isDark) {
+    document.body.className = isDark ? 'dark' : 'light'; 
+    if (themeMeta) themeMeta.setAttribute('content', isDark ? '#000000' : '#ffffff');
+    if (themeSwitch) {
+      if (isDark) themeSwitch.classList.add('active');
+      else themeSwitch.classList.remove('active');
+    }
+    
+    if (themeIconSvg) {
+      if (isDark) {
+        themeIconSvg.innerHTML = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>`;
+      } else {
+        themeIconSvg.innerHTML = `
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        `;
+      }
+    }
+  }
+
+  themeToggleBtnAction.onclick = () => {
+    const isNextDark = !document.body.classList.contains('dark');
+    applyTheme(isNextDark);
+    localStorage.setItem('user_theme_preference', isNextDark ? 'dark' : 'light');
+    showToast(isNextDark ? "切换至暗夜模式" : "切换至日间模式");
+  };
+
+  const savedTheme = localStorage.getItem('user_theme_preference');
+  applyTheme(savedTheme === 'dark');
+</script>
+</body>
+</html>
