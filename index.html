@@ -127,50 +127,36 @@
   }
   .meta-row .val { text-align: right; color: inherit; } 
 
-  /* --- 独立固定限高与放大的热力图区域 --- */
+  /* --- 单一年份专属热力图区域 (固定高度、仅横向滚动、仅展示当年) --- */
   .heatmap-card {
     background: transparent;
     border: none;
-    padding: 4px 0 12px;
-    margin-bottom: 12px;
+    padding: 6px 0 10px;
+    margin-bottom: 15px;
     width: 100%;
-    /* 限高区域，确保不占用过多数值空间，防止挤压下方输入框与按钮 */
-    max-height: 180px;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--scroll-thumb) transparent;
-  }
-
-  .heatmap-year-section {
-    margin-bottom: 16px;
-  }
-
-  .heatmap-grid-container {
-    display: flex;
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
-    width: 100%;
-    padding: 4px 0 6px;
     scrollbar-width: thin;
     scrollbar-color: var(--scroll-thumb) transparent;
   }
 
-  .heatmap-grid-container::-webkit-scrollbar { height: 4px; }
-  .heatmap-grid-container::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 2px; }
+  .heatmap-card::-webkit-scrollbar { height: 4px; }
+  .heatmap-card::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 2px; }
 
-  /* 放大热力图方块：7行，每格尺寸加大至 12px × 12px，间距 4px */
+  /* 放大热力图方块：单一年份 7 行，每格尺寸加大至 13px × 13px，间距 4.5px */
   .heatmap-grid {
     display: grid;
-    grid-template-rows: repeat(7, 12px);
+    grid-template-rows: repeat(7, 13px);
     grid-auto-flow: column;
-    gap: 4px;
+    gap: 4.5px;
     margin: 0;
+    width: max-content;
   }
 
   .heatmap-cell {
-    width: 12px;
-    height: 12px;
+    width: 13px;
+    height: 13px;
     border-radius: 2px;
     background-color: var(--hm-level-0);
     transition: transform 0.15s ease, background-color 0.3s;
@@ -178,7 +164,7 @@
   }
 
   .heatmap-cell:hover {
-    transform: scale(1.4);
+    transform: scale(1.35);
     z-index: 10;
   }
 
@@ -576,12 +562,11 @@
 <div class="editor-overlay" id="overlay">
   <div class="editor-box" onclick="event.stopPropagation()">
     <div style="display:flex;justify-content:space-between;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)">
-      <!-- 将 NEW ENTRY 替换为 2026 YEAR，保留 NEW ENTRY 原始的颜色样式 -->
       <span id="editor-year-title" style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--muted)">2026 YEAR</span>
       <button id="closeEditorAction" style="background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;">✕</button>
     </div>
 
-    <!-- 热力图置于高限高固定卡片中，双向独立滚动，不占额外上下堆叠控件 -->
+    <!-- 严格限定单一年份大尺寸热力图，横向可滚动，无下层拼接 -->
     <div class="heatmap-card" id="heatmapCard"></div>
 
     <div class="field"><input id="inp-title" placeholder="标题 (可选)"></div>
@@ -723,7 +708,7 @@
     localStorage.setItem('my_local_space_data', JSON.stringify(allEntries));
   }
 
-  // --- 重置的热力图渲染：放大方块，默认呈现当前年份，纵向可下滑看往年 ---
+  // --- 修正后的单一年份专属热力图渲染 ---
   function renderHeatmap() {
     const card = document.getElementById('heatmapCard');
     if (!card) return;
@@ -734,101 +719,82 @@
     if (yearTitleEl) yearTitleEl.innerText = `${currentYear} YEAR`;
 
     const dateMap = {};
-    const yearsSet = new Set();
-
     allEntries.forEach(e => {
       const d = parseSafeDate(e.date);
-      const k = formatDateKey(d);
-      if (!dateMap[k]) dateMap[k] = [];
-      dateMap[k].push(e);
-      yearsSet.add(d.getFullYear());
-    });
-
-    yearsSet.add(currentYear);
-
-    // 将年份按倒序排列（当前年份最靠上，滑动可看往年）
-    const years = Array.from(yearsSet).sort((a, b) => b - a);
-
-    years.forEach(year => {
-      const yearSection = document.createElement('div');
-      yearSection.className = 'heatmap-year-section';
-
-      const container = document.createElement('div');
-      container.className = 'heatmap-grid-container';
-
-      const grid = document.createElement('div');
-      grid.className = 'heatmap-grid';
-
-      // 当年 1 月 1 日 到 12 月 31 日
-      const startDate = new Date(year, 0, 1);
-      const endDate = new Date(year, 11, 31);
-
-      // 计算首个周一
-      const startDayOfWeek = (startDate.getDay() + 6) % 7; 
-      const firstMonday = new Date(startDate);
-      firstMonday.setDate(startDate.getDate() - startDayOfWeek);
-
-      const totalDays = Math.ceil((endDate - firstMonday) / (1000 * 60 * 60 * 24)) + 1;
-      const totalCols = Math.ceil(totalDays / 7);
-
-      grid.style.gridTemplateColumns = `repeat(${totalCols}, 12px)`;
-
-      const currPointer = new Date(firstMonday);
-
-      // 严格按列排布 (7 行 x totalCols 列)
-      for (let col = 0; col < totalCols; col++) {
-        for (let row = 0; row < 7; row++) {
-          const dateKey = formatDateKey(currPointer);
-          const isTargetYear = currPointer.getFullYear() === year;
-
-          const entriesToday = isTargetYear ? (dateMap[dateKey] || []) : [];
-          const count = entriesToday.length;
-
-          let level = 0;
-          if (isTargetYear && count > 0) {
-            if (count >= 4) level = 4;
-            else if (count === 3) level = 3;
-            else if (count === 2) level = 2;
-            else level = 1;
-          }
-
-          const cell = document.createElement('div');
-          cell.className = 'heatmap-cell';
-          cell.setAttribute('data-level', level);
-
-          if (!isTargetYear) {
-            cell.style.opacity = '0.12';
-            cell.title = dateKey;
-          } else {
-            cell.title = `${dateKey}: ${count} 条记录`;
-            if (count > 0) {
-              cell.onclick = () => {
-                document.getElementById('overlay').classList.remove('open');
-                showToast(`${dateKey} 共 ${count} 条记录`);
-                jumpToDate(dateKey);
-              };
-            } else {
-              cell.onclick = () => showToast(`${dateKey}: 暂无记录`);
-            }
-          }
-
-          grid.appendChild(cell);
-          currPointer.setDate(currPointer.getDate() + 1);
-        }
+      if (d.getFullYear() === currentYear) {
+        const k = formatDateKey(d);
+        if (!dateMap[k]) dateMap[k] = [];
+        dateMap[k].push(e);
       }
-
-      container.appendChild(grid);
-      yearSection.appendChild(container);
-      card.appendChild(yearSection);
-
-      // 自动滑动到横向末端（最新日期）
-      setTimeout(() => {
-        container.scrollLeft = container.scrollWidth;
-      }, 50);
     });
 
-    // 默认滑动到最上方（当前年份热力图）
-    card.scrollTop = 0;
+    const grid = document.createElement('div');
+    grid.className = 'heatmap-grid';
+
+    // 仅取当前年份 1 月 1 日 到 12 月 31 日
+    const startDate = new Date(currentYear, 0, 1);
+    const endDate = new Date(currentYear, 11, 31);
+
+    // 计算首个周一
+    const startDayOfWeek = (startDate.getDay() + 6) % 7; 
+    const firstMonday = new Date(startDate);
+    firstMonday.setDate(startDate.getDate() - startDayOfWeek);
+
+    const totalDays = Math.ceil((endDate - firstMonday) / (1000 * 60 * 60 * 24)) + 1;
+    const totalCols = Math.ceil(totalDays / 7);
+
+    grid.style.gridTemplateColumns = `repeat(${totalCols}, 13px)`;
+
+    const currPointer = new Date(firstMonday);
+
+    // 生成当前年份网格
+    for (let col = 0; col < totalCols; col++) {
+      for (let row = 0; row < 7; row++) {
+        const dateKey = formatDateKey(currPointer);
+        const isTargetYear = currPointer.getFullYear() === currentYear;
+
+        const entriesToday = isTargetYear ? (dateMap[dateKey] || []) : [];
+        const count = entriesToday.length;
+
+        let level = 0;
+        if (isTargetYear && count > 0) {
+          if (count >= 4) level = 4;
+          else if (count === 3) level = 3;
+          else if (count === 2) level = 2;
+          else level = 1;
+        }
+
+        const cell = document.createElement('div');
+        cell.className = 'heatmap-cell';
+        cell.setAttribute('data-level', level);
+
+        if (!isTargetYear) {
+          cell.style.opacity = '0.12';
+          cell.title = dateKey;
+        } else {
+          cell.title = `${dateKey}: ${count} 条记录`;
+          if (count > 0) {
+            cell.onclick = () => {
+              document.getElementById('overlay').classList.remove('open');
+              showToast(`${dateKey} 共 ${count} 条记录`);
+              jumpToDate(dateKey);
+            };
+          } else {
+            cell.onclick = () => showToast(`${dateKey}: 暂无记录`);
+          }
+        }
+
+        grid.appendChild(cell);
+        currPointer.setDate(currPointer.getDate() + 1);
+      }
+    }
+
+    card.appendChild(grid);
+
+    // 自动平滑滚动至最右侧（最新周）
+    setTimeout(() => {
+      card.scrollLeft = card.scrollWidth;
+    }, 50);
   }
 
   function jumpToDate(dateKey) {
