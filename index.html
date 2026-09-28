@@ -226,12 +226,12 @@
   
   #inline-search { width: 100%; background: transparent; border: none; font-family: inherit; font-size: 0.85rem; color: var(--text); outline: none; }
   
-  /* 邮箱输入框：数字用 DM Mono，文字用宋体 */
+  /* 邮箱输入框保持默认继承字体 */
   #inline-email { 
     width: 100%; 
     background: transparent; 
     border: none; 
-    font-family: 'DM Mono', 'Noto Serif SC', serif; 
+    font-family: inherit; 
     font-size: 0.85rem; 
     color: var(--text); 
     outline: none; 
@@ -407,9 +407,12 @@
   .btn-action-text { background: none; border: none; font-family: inherit; font-size: 0.72rem; color: var(--accent); cursor: pointer; opacity: 0.85; transition: opacity 0.2s; line-height: 1; }
   .btn-action-text:hover { opacity: 1; }
 
-  /* 使得左下角文字与右下角保持一致：数字使用 DM Mono，汉字/标点继承宋体 */
+  /* 左下角中文使用默认字体，数字单独使用 DM Mono */
   #email-status-tip .btn-action-text {
-    font-family: 'DM Mono', 'Noto Serif SC', serif;
+    font-family: 'Noto Serif SC', serif;
+  }
+  #email-status-tip .btn-action-text .num-font {
+    font-family: 'DM Mono', monospace;
   }
 
   .pin-input {
@@ -744,7 +747,7 @@
     const day = String(d.getDate()).padStart(2, '0');
     const hours = String(d.getHours()).padStart(2, '0');
     const minutes = String(d.getMinutes()).padStart(2, '0');
-    return `${year}.${month}.${day} ${hours}:${minutes}`;
+    return `<span class="num-font">${year}</span>.<span class="num-font">${month}</span>.<span class="num-font">${day}</span> <span class="num-font">${hours}</span>:<span class="num-font">${minutes}</span>`;
   }
 
   function loadLocalEntries() {
@@ -1019,7 +1022,7 @@
     }
 
     let lastBackupStr = "暂无备份记录";
-    let remainingStr = "7天";
+    let remainingStr = `<span class="num-font">7</span>天`;
 
     if (lastBackup) {
       const lastBackupDate = new Date(Number(lastBackup));
@@ -1034,7 +1037,7 @@
         const hoursLeft = Math.floor(diffMs / (1000 * 60 * 60));
         const daysLeft = Math.floor(hoursLeft / 24);
         const remHours = hoursLeft % 24;
-        remainingStr = daysLeft > 0 ? `${daysLeft}天${remHours}小时` : `${hoursLeft}小时`;
+        remainingStr = daysLeft > 0 ? `<span class="num-font">${daysLeft}</span>天<span class="num-font">${remHours}</span>小时` : `<span class="num-font">${hoursLeft}</span>小时`;
       }
     }
 
