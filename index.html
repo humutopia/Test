@@ -224,7 +224,18 @@
     gap: 10px; 
   }
   
-  #inline-search, #inline-email { width: 100%; background: transparent; border: none; font-family: inherit; font-size: 0.85rem; color: var(--text); outline: none; }
+  #inline-search { width: 100%; background: transparent; border: none; font-family: inherit; font-size: 0.85rem; color: var(--text); outline: none; }
+  
+  /* 仅修改邮箱输入框：文字采用宋体，数字采用 DM Mono */
+  #inline-email { 
+    width: 100%; 
+    background: transparent; 
+    border: none; 
+    font-family: 'DM Mono', 'Noto Serif SC', serif; 
+    font-size: 0.85rem; 
+    color: var(--text); 
+    outline: none; 
+  }
 
   .results-dropdown { 
     position: absolute; 
