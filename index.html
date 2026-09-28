@@ -476,7 +476,7 @@
     
     <!-- 第二行：左侧为备份时间与倒计时，右侧上面为保存邮箱、下面为备份到邮箱 -->
     <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%;">
-      <!-- 第二行左侧：上次备份与下次备份剩余时间（括号自动备份） -->
+      <!-- 第二行左侧：上次备份时间与下次自动备份剩余时间 -->
       <div id="email-status-tip" style="font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--muted); opacity: 0.85; display: flex; flex-direction: column; gap: 4px;"></div>
       
       <!-- 第二行右侧：上面为保存邮箱，下面为备份到邮箱 -->
@@ -1012,7 +1012,7 @@
       }
     }
 
-    tip.innerHTML = `<span>上次备份: ${lastBackupStr}</span><span>下次备份: 还剩 ${remainingStr} (自动备份)</span>`;
+    tip.innerHTML = `<span>上次备份时间: ${lastBackupStr}</span><span>下次自动备份: 还剩 ${remainingStr}</span>`;
   }
 
   function flattenAndNormalizeJson(obj, results = [], depth = 0) {
