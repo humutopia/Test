@@ -469,18 +469,18 @@
 
 <div class="email-area" id="emailArea">
   <div class="email-card" style="display: flex; flex-direction: column; gap: 14px; padding: 16px 20px;">
-    <!-- 1. 独立输入框行 -->
+    <!-- 第一行：邮箱输入框 -->
     <div style="width: 100%; border-bottom: 1px dashed var(--border); padding-bottom: 8px;">
       <input id="inline-email" type="email" autocomplete="off" placeholder="接收备份的邮箱 (如 user@qq.com)..." style="width: 100%;">
     </div>
     
-    <!-- 2. 状态提示与操作按钮行 -->
-    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
-      <!-- 左侧：动态状态提示 -->
-      <div id="email-status-tip" style="font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--muted); opacity: 0.85; display: flex; gap: 12px; align-items: center;"></div>
+    <!-- 第二行：左侧为备份时间与倒计时，右侧上面为保存邮箱、下面为备份到邮箱 -->
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%;">
+      <!-- 第二行左侧：上次备份与下次备份剩余时间（括号自动备份） -->
+      <div id="email-status-tip" style="font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--muted); opacity: 0.85; display: flex; flex-direction: column; gap: 4px;"></div>
       
-      <!-- 右侧：按钮组 -->
-      <div style="display: flex; gap: 14px; flex-shrink: 0;">
+      <!-- 第二行右侧：上面为保存邮箱，下面为备份到邮箱 -->
+      <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end; flex-shrink: 0;">
         <button class="btn-action-text" id="saveEmailBtn">保存邮箱</button>
         <button class="btn-action-text" id="manualBackupBtn">备份到邮箱</button>
       </div>
@@ -993,18 +993,26 @@
     }
 
     let lastBackupStr = "暂无备份记录";
-    let nextBackupStr = "即将触发";
+    let remainingStr = "7天";
 
     if (lastBackup) {
       const lastBackupDate = new Date(Number(lastBackup));
       lastBackupStr = formatDateStandard(lastBackupDate);
 
       const nextBackupTime = Number(lastBackup) + (7 * 24 * 60 * 60 * 1000);
-      const nextBackupDate = new Date(nextBackupTime);
-      nextBackupStr = formatDateStandard(nextBackupDate);
+      const diffMs = nextBackupTime - Date.now();
+      
+      if (diffMs <= 0) {
+        remainingStr = "即将触发";
+      } else {
+        const hoursLeft = Math.floor(diffMs / (1000 * 60 * 60));
+        const daysLeft = Math.floor(hoursLeft / 24);
+        const remHours = hoursLeft % 24;
+        remainingStr = daysLeft > 0 ? `${daysLeft}天${remHours}小时` : `${hoursLeft}小时`;
+      }
     }
 
-    tip.innerHTML = `<span>上次备份: ${lastBackupStr}</span><span>下次备份: ${nextBackupStr}</span>`;
+    tip.innerHTML = `<span>上次备份: ${lastBackupStr}</span><span>下次备份: 还剩 ${remainingStr} (自动备份)</span>`;
   }
 
   function flattenAndNormalizeJson(obj, results = [], depth = 0) {
