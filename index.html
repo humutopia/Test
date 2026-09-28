@@ -468,15 +468,23 @@
 </header>
 
 <div class="email-area" id="emailArea">
-  <div class="email-card">
-    <div style="padding-bottom: 8px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-      <input id="inline-email" type="email" autocomplete="off" placeholder="接收备份的邮箱 (如 user@qq.com)...">
-      <div style="display: flex; gap: 12px; flex-shrink: 0;">
+  <div class="email-card" style="display: flex; flex-direction: column; gap: 14px; padding: 16px 20px;">
+    <!-- 1. 独立输入框行 -->
+    <div style="width: 100%; border-bottom: 1px dashed var(--border); padding-bottom: 8px;">
+      <input id="inline-email" type="email" autocomplete="off" placeholder="接收备份的邮箱 (如 user@qq.com)..." style="width: 100%;">
+    </div>
+    
+    <!-- 2. 状态提示与操作按钮行 -->
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+      <!-- 左侧：动态状态提示 -->
+      <div id="email-status-tip" style="font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--muted); opacity: 0.85; display: flex; gap: 12px; align-items: center;"></div>
+      
+      <!-- 右侧：按钮组 -->
+      <div style="display: flex; gap: 14px; flex-shrink: 0;">
         <button class="btn-action-text" id="saveEmailBtn">保存邮箱</button>
         <button class="btn-action-text" id="manualBackupBtn">备份到邮箱</button>
       </div>
     </div>
-    <div id="email-status-tip" style="font-family: 'DM Mono', monospace; font-size:0.68rem; color:var(--muted); opacity:0.85; display:flex; justify-content:space-between; align-items:center; gap: 10px;"></div>
   </div>
 </div>
 
