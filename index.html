@@ -226,16 +226,17 @@
   
   #inline-search { width: 100%; background: transparent; border: none; font-family: inherit; font-size: 0.9rem; color: var(--text); outline: none; }
   
-  /* 邮箱输入框：加大内边距，提供充裕的输入空间 */
+  /* 邮箱输入框精调：缩小字体，控制最大宽度 */
   #inline-email { 
     width: 100%; 
+    max-width: 320px; 
     background: transparent; 
     border: none; 
     font-family: inherit; 
-    font-size: 0.9rem; 
+    font-size: 0.85rem; 
     color: var(--text); 
     outline: none; 
-    padding: 10px 0;
+    padding: 6px 0;
   }
 
   .results-dropdown { 
@@ -256,13 +257,13 @@
   @media (max-width: 600px) { .results-dropdown { left: 25px; right: 25px; } }
   .results-dropdown.active { display: block; }
   
-  /* 邮箱卡片放宽内边距，解除拥挤感 */
+  /* 邮箱卡片整体样式 */
   .email-card {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 6px;
     box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-    padding: 20px 24px;
+    padding: 18px 22px;
     font-size: 0.85rem;
   }
 
@@ -415,15 +416,22 @@
   .btn-yes { color: var(--accent); background:none; border:none; cursor:pointer; font-family: inherit; font-size:0.75rem; font-weight:bold; }
   #status-toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; font-size: 0.7rem; font-family: 'DM Mono', monospace; z-index: 30000; border-radius: 2px; display: none; }
 
-  .btn-action-text { background: none; border: none; font-family: inherit; font-size: 0.78rem; color: var(--accent); cursor: pointer; opacity: 0.85; transition: opacity 0.2s; line-height: 1; }
+  .btn-action-text { background: none; border: none; font-family: inherit; font-size: 0.85rem; color: var(--accent); cursor: pointer; opacity: 0.85; transition: opacity 0.2s; line-height: 1.4; }
   .btn-action-text:hover { opacity: 1; }
 
-  /* 左下角中文使用默认字体，数字单独使用 DM Mono */
-  #email-status-tip .btn-action-text {
-    font-family: 'Noto Serif SC', serif;
+  /* 左下角提示控制样式，保持 0.85rem 一致字号与垂直对齐 */
+  #email-status-tip {
+    font-size: 0.85rem;
+    line-height: 1.4;
   }
-  #email-status-tip .btn-action-text .num-font {
+  #email-status-tip .status-line-item {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  #email-status-tip .num-font {
     font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
   }
 
   .pin-input {
@@ -508,19 +516,19 @@
 </header>
 
 <div class="email-area" id="emailArea">
-  <div class="email-card" style="display: flex; flex-direction: column; gap: 16px;">
+  <div class="email-card" style="display: flex; flex-direction: column; gap: 14px;">
     <!-- 第一行：邮箱输入框 -->
-    <div style="width: 100%; border-bottom: 1px dashed var(--border); padding-bottom: 8px;">
-      <input id="inline-email" type="email" autocomplete="off" placeholder="接收备份的邮箱 (如 user@qq.com)..." style="width: 100%;">
+    <div style="border-bottom: 1px dashed var(--border); padding-bottom: 6px;">
+      <input id="inline-email" type="email" autocomplete="off" placeholder="接收备份的邮箱 (如 user@qq.com)...">
     </div>
     
-    <!-- 第二行：左侧为下次自动备份与上次备份时间，右侧上面为保存邮箱、下面为备份到邮箱 -->
+    <!-- 第二行：左右精准对齐 -->
     <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; width: 100%;">
-      <!-- 第二行左侧：下次自动备份剩余时间与上次备份时间 -->
-      <div id="email-status-tip" style="display: flex; flex-direction: column; gap: 12px; justify-content: center;"></div>
+      <!-- 第二行左侧：提示文案 -->
+      <div id="email-status-tip" style="display: flex; flex-direction: column; gap: 10px; justify-content: center;"></div>
       
-      <!-- 第二行右侧：上面为保存邮箱，下面为备份到邮箱 -->
-      <div style="display: flex; flex-direction: column; gap: 12px; align-items: flex-end; flex-shrink: 0; justify-content: center;">
+      <!-- 第二行右侧：操作按钮 -->
+      <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-end; flex-shrink: 0; justify-content: center;">
         <button class="btn-action-text" id="saveEmailBtn">保存邮箱</button>
         <button class="btn-action-text" id="manualBackupBtn">备份到邮箱</button>
       </div>
@@ -635,7 +643,7 @@
       <button id="closeEditorAction" style="background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;">✕</button>
     </div>
 
-    <!-- 严格限定单一年份大尺寸热力图，横向可滚动，无下层拼接 -->
+    <!-- 严格限定单一年份大尺寸热力图，横向可滚动 -->
     <div class="heatmap-card" id="heatmapCard"></div>
 
     <div class="field"><input id="inp-title" placeholder="标题 (可选)"></div>
@@ -1028,7 +1036,7 @@
     const lastBackup = localStorage.getItem('mutopia_last_backup_time');
 
     if (!userEmail) {
-      tip.innerHTML = "<span class=\"btn-action-text\" style=\"color: var(--muted); cursor: default;\">未设置接收邮箱</span><span class=\"btn-action-text\" style=\"color: var(--muted); cursor: default;\">未开启自动备份</span>";
+      tip.innerHTML = `<div class="status-line-item">未设置接收邮箱</div><div class="status-line-item">未开启自动备份</div>`;
       return;
     }
 
@@ -1052,7 +1060,7 @@
       }
     }
 
-    tip.innerHTML = `<span class="btn-action-text" style="color: var(--muted); cursor: default;">下次自动备份: 还剩 ${remainingStr}</span><span class="btn-action-text" style="color: var(--muted); cursor: default;">上次备份时间: ${lastBackupStr}</span>`;
+    tip.innerHTML = `<div class="status-line-item">下次自动备份: 还剩 ${remainingStr}</div><div class="status-line-item">上次备份时间: ${lastBackupStr}</div>`;
   }
 
   function flattenAndNormalizeJson(obj, results = [], depth = 0) {
