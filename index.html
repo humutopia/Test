@@ -67,6 +67,12 @@
 
   body { background: var(--bg); color: var(--text); font-family: 'Noto Serif SC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, serif; min-height: 100vh; padding-bottom: calc(120px + env(safe-area-inset-bottom)); transition: background 0.4s ease; overflow-x: hidden; }
   
+  /* 锁定页面滚动类 */
+  body.is-locked {
+    overflow: hidden !important;
+    height: 100vh !important;
+  }
+
   header { padding: calc(60px + env(safe-area-inset-top)) 40px 20px; max-width: 700px; margin: 0 auto; display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; }
   
   .site-title { 
@@ -400,7 +406,18 @@
   }
   .editor-overlay.open { display: flex; align-items: flex-end; justify-content: center; }
   .confirm-overlay { z-index: 1000; align-items: center; justify-content: center; }
-  .lock-overlay { z-index: 20000; align-items: center; justify-content: center; flex-direction: column; }
+  
+  /* 修改锁屏遮罩层：设为完全不透明背景，高 z-index 并禁用手势穿透 */
+  .lock-overlay { 
+    z-index: 99999; 
+    align-items: center; 
+    justify-content: center; 
+    flex-direction: column; 
+    background: var(--bg); 
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    touch-action: none;
+  }
 
   .editor-box { background: var(--surface); width: 100%; max-width: 700px; padding: 24px 32px calc(40px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); border-radius: 12px 12px 0 0; max-height: 90vh; overflow-y: auto; }
   
@@ -993,15 +1010,18 @@
       pinCodeInput.value = '';
       cancelLockBtn.style.display = 'none';
       lockOverlay.style.display = 'flex';
+      document.body.classList.add('is-locked'); // 开启锁屏，禁用底层滚动
       setTimeout(() => pinCodeInput.focus(), 200);
     } else {
       lockOverlay.style.display = 'none';
+      document.body.classList.remove('is-locked');
     }
   }
 
   unlockAppBtn.onclick = handlePinSubmit;
   cancelLockBtn.onclick = () => {
     lockOverlay.style.display = 'none';
+    document.body.classList.remove('is-locked');
     pinCodeInput.value = '';
     isSettingPinMode = false;
   };
@@ -1018,6 +1038,7 @@
       }
       localStorage.setItem('mutopia_app_pin', val);
       lockOverlay.style.display = 'none';
+      document.body.classList.remove('is-locked'); // 恢复底层滚动
       updateLockStatusUI();
       showToast("应用锁定成功");
       isSettingPinMode = false;
@@ -1033,6 +1054,7 @@
       setTimeout(() => {
         lockOverlay.style.display = 'none';
         lockOverlay.classList.remove('unlocking');
+        document.body.classList.remove('is-locked'); // 解锁成功，恢复底层滚动
         unlockAppBtn.disabled = false;
         showToast("解锁成功");
       }, 650);
@@ -1057,6 +1079,7 @@
       pinCodeInput.value = '';
       cancelLockBtn.style.display = 'block';
       lockOverlay.style.display = 'flex';
+      document.body.classList.add('is-locked'); // 设置 PIN 码时锁定背景滚动
       setTimeout(() => pinCodeInput.focus(), 200);
     }
   };
