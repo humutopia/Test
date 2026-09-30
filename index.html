@@ -444,7 +444,7 @@
     outline: none;
   }
 
-  /* --- 小锁锁屏动画 --- */
+  /* --- 小锁锁屏动画 (以左侧为旋转轴) --- */
   .lock-icon-wrap {
     width: 54px;
     height: 54px;
@@ -463,7 +463,7 @@
 
   .lock-icon .lock-shackle {
     transform-box: fill-box;
-    transform-origin: 50% 100%;
+    transform-origin: 0% 100%; /* 设置旋转轴在左侧底端 */
     transition: transform 0.55s cubic-bezier(.22,.8,.25,1);
   }
 
@@ -477,7 +477,7 @@
   }
 
   .lock-overlay.unlocking .lock-shackle {
-    transform: rotate(-34deg) translate(-1px, -1px);
+    transform: rotate(-34deg) translate(0px, -2px); /* 向上弹出并以左侧为轴向左旋转，右侧拔出 */
   }
 
   .lock-overlay.unlocking .lock-body {
