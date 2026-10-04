@@ -1,1593 +1,2360 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Mutopia</title>
-
-<!-- PWA 与应用清单声明 -->
-<link rel="manifest" href="/manifest.json">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Muto">
-<meta name="theme-color" content="#ffffff" id="themeColorMeta">
-
-<!-- Base64 内嵌白底黑笔图标 -->
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='120' fill='%23ffffff'/><g transform='translate(96, 96) scale(1.25)'><path d='M170 30 L210 70 L70 210 L30 210 L30 170 Z' fill='none' stroke='%23111111' stroke-width='20' stroke-linejoin='round'/><path d='M130 70 L170 110' stroke='%23111111' stroke-width='20'/><rect x='110' y='160' width='80' height='18' rx='9' fill='%23111111'/><rect x='90' y='195' width='100' height='18' rx='9' fill='%23111111'/><rect x='90' y='195' width='100' height='18' rx='9' fill='%23111111'/></g></svg>">
-
-<link rel="apple-touch-icon" href="/logo.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/logo.png">
-
-<!-- 字体加载 -->
-<link rel="stylesheet" href="https://fonts.font.im/css2?family=Noto+Serif+SC:wght@300;400;500&family=DM+Mono:ital@0;1&display=swap" media="print" onload="this.media='all'">
-
-<style>
-  @import url('https://fonts.cdnfonts.com/css/halimun');
-
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  
-  body.dark { 
-    --bg: #000000; 
-    --surface: #0a0a0a; 
-    --border: #1a1a1a; 
-    --text: #e2ddd5; 
-    --muted: #555; 
-    --overlay-bg: rgba(0,0,0,0.9); 
-    --scroll-thumb: #333; 
-    --switch-bg: #222;
-
-    /* 热力图深色变量 */
-    --hm-level-0: #141414;
-    --hm-level-1: #4a3e20;
-    --hm-level-2: #7e6328;
-    --hm-level-3: #c8a96e;
-    --hm-level-4: #f0d59e;
-  }
-
-  body.light { 
-    --bg: #ffffff; 
-    --surface: #fcfcfc; 
-    --border: #eeeeee; 
-    --text: #222222; 
-    --muted: #999; 
-    --overlay-bg: rgba(255,255,255,0.9); 
-    --scroll-thumb: #ddd; 
-    --switch-bg: #e0e0e0;
-
-    /* 热力图浅色变量 */
-    --hm-level-0: #f2f2f2;
-    --hm-level-1: #f3e7c4;
-    --hm-level-2: #e6ce93;
-    --hm-level-3: #c8a96e;
-    --hm-level-4: #9e7d3b;
-  }
-  
-  :root { --accent: #c8a96e; --accent2: #7eb8a4; }
-
-  body { background: var(--bg); color: var(--text); font-family: 'Noto Serif SC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, serif; min-height: 100vh; padding-bottom: calc(120px + env(safe-area-inset-bottom)); transition: background 0.4s ease; overflow-x: hidden; }
-  
-  /* 处于锁定状态时严格禁止滚动并完全隐藏底部所有层级内容 */
-  body.is-locked {
-    overflow: hidden !important;
-    height: 100vh !important;
-  }
-  body.is-locked header,
-  body.is-locked .container,
-  body.is-locked .write-btn,
-  body.is-locked .search-area,
-  body.is-locked .pinned-area,
-  body.is-locked .email-area,
-  body.is-locked .settings-area {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-  }
-
-  header { padding: calc(60px + env(safe-area-inset-top)) 40px 20px; max-width: 700px; margin: 0 auto; display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; }
-  
-  .site-title { 
-    font-family: 'Halimun', 'Brush Script MT', cursive; 
-    font-size: 2.5rem; 
-    font-weight: bold; 
-    color: var(--accent); 
-    line-height: 1.1;
-    word-break: break-all;
-    flex: 1;
-    min-width: 0;
-  }
-
-  @media (max-width: 600px) {
-    header { padding: calc(50px + env(safe-area-inset-top)) 25px 20px; }
-    .site-title { font-size: 1.8rem; }
-    .container { padding: 0 25px; }
-    .search-area, .pinned-area, .email-area, .settings-area { padding: 0 25px !important; }
-    .editor-box { padding: 20px 20px calc(40px + env(safe-area-inset-bottom)) !important; }
-  }
-  
-  .site-meta { 
-    display: flex; 
-    flex-direction: column; 
-    align-items: flex-end; 
-    gap: 4px; 
-    font-family: 'DM Mono', monospace; 
-    font-size: 0.6rem; 
-    color: var(--muted);
-    flex-shrink: 0;
-  }
-
-  .meta-icons {
-    display: flex;
-    justify-content: space-between;
-    width: 100px;
-    margin-bottom: 6px;
-    align-items: center;
-  }
-
-  .meta-trigger { 
-    cursor: pointer; 
-    color: var(--muted); 
-    opacity: 0.5; 
-    transition: 0.3s; 
-    display: flex; 
-    align-items: center;
-  }
-  .meta-trigger:hover, .meta-trigger.active { color: var(--accent); opacity: 1; }
-  .meta-trigger svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 1.8; fill: none; }
-
-  .meta-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr; 
-    width: 100px; 
-    letter-spacing: 0.12em;
-    color: inherit;
-  }
-  .meta-row .val { text-align: right; color: inherit; } 
-
-  /* 年份切换按钮样式 */
-  .year-nav-btn {
-    background: none;
-    border: none;
-    color: var(--muted);
-    cursor: pointer;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.85rem;
-    padding: 0 4px;
-    transition: color 0.2s, opacity 0.2s;
-    user-select: none;
-  }
-  .year-nav-btn:hover {
-    color: var(--accent);
-  }
-
-  /* --- 单一年份专属热力图区域 --- */
-  .heatmap-card {
-    background: transparent;
-    border: none;
-    padding: 6px 0 10px;
-    margin-bottom: 15px;
-    width: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-    scrollbar-color: var(--scroll-thumb) transparent;
-  }
-
-  .heatmap-card::-webkit-scrollbar { height: 4px; }
-  .heatmap-card::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 2px; }
-
-  .heatmap-grid {
-    display: grid;
-    grid-template-rows: repeat(7, 13px);
-    grid-auto-flow: column;
-    gap: 4.5px;
-    margin: 0;
-    width: max-content;
-  }
-
-  .heatmap-cell {
-    width: 13px;
-    height: 13px;
-    border-radius: 2px;
-    background-color: var(--hm-level-0);
-    transition: transform 0.15s ease, background-color 0.3s;
-    cursor: pointer;
-  }
-
-  .heatmap-cell:hover {
-    transform: scale(1.35);
-    z-index: 10;
-  }
-
-  .heatmap-cell[data-level="0"] { background-color: var(--hm-level-0); }
-  .heatmap-cell[data-level="1"] { background-color: var(--hm-level-1); }
-  .heatmap-cell[data-level="2"] { background-color: var(--hm-level-2); }
-  .heatmap-cell[data-level="3"] { background-color: var(--hm-level-3); }
-  .heatmap-cell[data-level="4"] { background-color: var(--hm-level-4); }
-
-  /* 状态/检索/设置/置顶等下拉展开区域 */
-  .search-area, .pinned-area, .email-area, .settings-area { 
-    max-width: 700px; 
-    margin: 0 auto; 
-    padding: 0 40px;
-    height: 0; 
-    overflow: hidden; 
-    opacity: 0; 
-    transition: height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease, margin-bottom 0.3s ease; 
-    position: relative; 
-    margin-top: 0;
-    margin-bottom: 0;
-  }
-  .search-area.active, .pinned-area.active, .email-area.active, .settings-area.active { 
-    height: auto; 
-    min-height: 45px; 
-    opacity: 1; 
-    overflow: visible; 
-    margin-top: 15px; 
-    margin-bottom: 25px; 
-  }
-  
-  .panel-box-wrapper { 
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-    padding: 16px 20px;
-    display: flex; 
-    align-items: center; 
-    justify-content: space-between; 
-    gap: 12px; 
-  }
-  
-  #inline-search { width: 100%; background: transparent; border: none; font-family: inherit; font-size: 0.9rem; color: var(--text); outline: none; }
-  
-  #inline-email { 
-    width: 100%; 
-    max-width: 320px; 
-    background: transparent; 
-    border: none; 
-    font-family: inherit; 
-    font-size: 0.8rem; 
-    color: var(--text); 
-    outline: none; 
-    padding: 6px 0;
-  }
-
-  .results-dropdown { 
-    position: absolute; 
-    left: 40px; 
-    right: 40px; 
-    top: 100%;
-    margin-top: 6px;
-    background: var(--surface); 
-    z-index: 100; 
-    border: 1px solid var(--border); 
-    max-height: 300px; 
-    overflow-y: auto; 
-    display: none; 
-    box-shadow: 0 20px 40px rgba(0,0,0,0.5); 
-    border-radius: 6px; 
-  }
-  @media (max-width: 600px) { .results-dropdown { left: 25px; right: 25px; } }
-  .results-dropdown.active { display: block; }
-  
-  .email-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-    padding: 18px 22px;
-    font-size: 0.85rem;
-  }
-
-  .settings-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-    padding: 16px 20px;
-    font-size: 0.85rem;
-  }
-
-  .pinned-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-    padding: 0;
-    overflow: hidden;
-  }
-
-  .setting-icon-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 10px;
-    border-bottom: 1px dashed var(--border);
-    cursor: pointer;
-    border-radius: 2px;
-    transition: background 0.2s ease, opacity 0.2s ease;
-  }
-  .setting-icon-item:last-child { border-bottom: none; }
-  .setting-icon-item:hover { 
-    background: rgba(200, 169, 110, 0.08); 
-  }
-  
-  .setting-item-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 0.85rem;
-    color: var(--text);
-  }
-  .setting-item-left svg {
-    width: 16px;
-    height: 16px;
-    stroke: var(--accent);
-    stroke-width: 1.8;
-    fill: none;
-    flex-shrink: 0;
-  }
-
-  .switch-toggle {
-    position: relative;
-    width: 36px;
-    height: 20px;
-    background-color: var(--switch-bg);
-    border-radius: 20px;
-    transition: background-color 0.3s ease;
-    flex-shrink: 0;
-    pointer-events: none;
-  }
-
-  .switch-toggle::after {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 16px;
-    height: 16px;
-    background-color: #ffffff;
-    border-radius: 50%;
-    transition: transform 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-  }
-
-  .switch-toggle.active {
-    background-color: var(--accent);
-  }
-
-  .switch-toggle.active::after {
-    transform: translateX(16px);
-  }
-
-  .res-item { padding: 14px 18px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s; }
-  .res-item:last-child { border-bottom: none; }
-  .res-item:hover { background: rgba(200, 169, 110, 0.1); }
-  .res-date { font-family: 'DM Mono'; font-size: 0.6rem; color: var(--accent); }
-  .res-title { font-size: 0.85rem; opacity: 0.8; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-  .container { max-width: 700px; margin: 0 auto; padding: 0 40px; }
-  
-  .year-group { padding-top: 30px; display: block !important; visibility: visible !important; }
-  
-  .year-row { display: flex; align-items: center; gap: 14px; margin-bottom: 15px; cursor: pointer; user-select: none; }
-  .year-row:hover .year-num { color: var(--accent); }
-  .year-row:hover .year-line { background: var(--accent); opacity: 0.5; }
-  
-  .year-num { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--muted); letter-spacing: 0.18em; transition: color 0.3s; display: flex; align-items: center; gap: 6px; }
-  .year-num::after { content: '▼'; font-size: 0.45rem; opacity: 0.5; transition: transform 0.3s; display: inline-block; }
-  
-  .year-group.is-collapsed .year-num::after { transform: rotate(-90deg); }
-  .year-line { flex: 1; height: 1px; background: var(--border); transition: background 0.3s; }
-  
-  .track { position: relative; padding-left: 32px; display: block; }
-  .track::before { content: ''; position: absolute; left: 0; top: 24px; bottom: 0; width: 1.5px; background: linear-gradient(180deg, var(--accent) 0%, var(--accent2) 60%, transparent 100%); opacity: 0.35; }
-  
-  .year-group.is-collapsed .track { display: none !important; }
-  
-  .entry { position: relative; padding: 26px 0 26px 24px; border-bottom: 1px solid var(--border); opacity: 1 !important; display: block !important; scroll-margin-top: 100px; transition: background 0.6s; }
-  .entry::before { content: ''; position: absolute; left: -4px; top: 33px; width: 7px; height: 7px; border-radius: 50%; background: var(--bg); border: 1.5px solid var(--accent); opacity: 0.65; }
-  .entry.highlight-flash { background: rgba(200, 169, 110, 0.2); }
-  .entry.is-pinned::after { content: 'PINNED'; position: absolute; right: 0; top: 12px; font-family: 'DM Mono'; font-size: 0.45rem; color: var(--accent); letter-spacing: 0.1em; opacity: 0.5; }
-
-  .entry-stamp { font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--accent); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-  .entry-actions { display: flex; gap: 12px; align-items: center; opacity: 0; transition: opacity 0.3s; }
-  .entry:hover .entry-actions { opacity: 1; }
-  .action-btn { color: var(--muted); cursor: pointer; font-size: 0.55rem; padding: 4px 0; }
-  .action-btn:hover { color: var(--accent); }
-  
-  .entry-title { font-size: 0.96rem; font-weight: 500; margin-bottom: 9px; }
-  .entry-body { font-size: 0.86rem; line-height: 2.1; opacity: 0.75; white-space: pre-wrap; text-align: justify; word-break: break-word; }
-  
-  .write-btn { position: fixed; bottom: calc(40px + env(safe-area-inset-bottom)); right: 40px; background: var(--accent); border: none; color: #0f0f0f; font-family: 'DM Mono', monospace; font-size: 0.65rem; padding: 11px 22px; cursor: pointer; border-radius: 2px; z-index: 10; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-  
-  .editor-overlay, .confirm-overlay { 
-    display: none; 
-    position: fixed; 
-    inset: 0; 
-    background: var(--overlay-bg); 
-    z-index: 999; 
-    backdrop-filter: blur(8px); 
-    -webkit-backdrop-filter: blur(8px); 
-  }
-
-  /* 锁屏全覆盖遮罩：CSS 默认设为 display: flex，置顶最大 z-index */
-  .lock-overlay {
-    display: flex;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: var(--bg);
-    z-index: 99999;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-  }
-
-  .editor-overlay.open { display: flex; align-items: flex-end; justify-content: center; }
-  .confirm-overlay { z-index: 1000; align-items: center; justify-content: center; }
-
-  .editor-box { background: var(--surface); width: 100%; max-width: 700px; padding: 24px 32px calc(40px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); border-radius: 12px 12px 0 0; max-height: 90vh; overflow-y: auto; }
-  
-  .field input, .field textarea { width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border); padding: 12px 0; font-family: inherit; font-size: 0.88rem; color: var(--text); outline: none; }
-  .field textarea { min-height: 160px; line-height: 2; }
-  
-  .btn-save { background: var(--accent); border: none; font-family: 'DM Mono', monospace; font-size: 0.65rem; color: #0f0f0f; padding: 12px 28px; cursor: pointer; border-radius: 2px; margin-top: 16px; width: 100%; transition: 0.3s; }
-  .btn-cancel-lock { background: transparent; border: 1px solid var(--border); font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--muted); padding: 12px 28px; cursor: pointer; border-radius: 2px; margin-top: 10px; width: 100%; transition: 0.3s; }
-  .btn-cancel-lock:hover { color: var(--text); border-color: var(--muted); }
-
-  .confirm-box, .lock-box { background: var(--surface); border: 1px solid var(--border); padding: 30px; width: 320px; text-align: center; border-radius: 8px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
-  .confirm-txt { font-size: 0.85rem; margin-bottom: 20px; color: var(--text); font-weight: 300; }
-  .confirm-btns { display: flex; justify-content: center; gap: 20px; }
-  .btn-no { color: var(--muted); background:none; border:none; cursor:pointer; font-family: inherit; font-size:0.75rem;}
-  .btn-yes { color: var(--accent); background:none; border:none; cursor:pointer; font-family: inherit; font-size:0.75rem; font-weight:bold; }
-  #status-toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; font-size: 0.7rem; font-family: 'DM Mono', monospace; z-index: 100000; border-radius: 2px; display: none; }
-
-  .btn-action-text { background: none; border: none; font-family: inherit; font-size: 0.78rem; color: var(--accent); cursor: pointer; opacity: 0.85; transition: opacity 0.2s; line-height: 1; }
-  .btn-action-text:hover { opacity: 1; }
-
-  #email-status-tip .btn-action-text {
-    font-family: 'Noto Serif SC', serif;
-  }
-  #email-status-tip .btn-action-text .num-font {
-    font-family: 'DM Mono', monospace;
-  }
-
-  .pin-input {
-    width: 100%;
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid var(--accent);
-    color: var(--text);
-    font-family: 'DM Mono', monospace;
-    font-size: 1.2rem;
-    text-align: center;
-    letter-spacing: 0.5em;
-    padding: 10px 0;
-    margin: 20px 0;
-    outline: none;
-  }
-
-  /* --- 小锁锁屏动画 --- */
-  .lock-icon-wrap {
-    width: 54px;
-    height: 54px;
-    margin: 0 auto 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--accent);
-  }
-
-  .lock-icon {
-    width: 38px;
-    height: 38px;
-    overflow: visible;
-  }
-
-  .lock-icon .lock-shackle {
-    transform-box: fill-box;
-    transform-origin: 0% 100%;
-    transition: transform 0.55s cubic-bezier(.22,.8,.25,1);
-  }
-
-  .lock-icon .lock-body {
-    transform-origin: 50% 50%;
-    transition: transform 0.55s cubic-bezier(.22,.8,.25,1), opacity 0.4s ease;
-  }
-
-  .lock-icon .lock-keyhole {
-    transition: opacity 0.25s ease;
-  }
-
-  .lock-overlay.unlocking .lock-shackle {
-    transform: rotate(-34deg) translate(0px, -2px);
-  }
-
-  .lock-overlay.unlocking .lock-body {
-    animation: lockBodyPop 0.6s cubic-bezier(.22,.8,.25,1) both;
-  }
-
-  .lock-overlay.unlocking .lock-keyhole {
-    opacity: 0;
-  }
-
-  .lock-overlay.unlocking .lock-box {
-    animation: unlockBoxFade 0.65s ease both;
-  }
-
-  @keyframes lockBodyPop {
-    0% { transform: translateY(0) scale(1); }
-    55% { transform: translateY(2px) scale(1.04); }
-    100% { transform: translateY(0) scale(1); }
-  }
-
-  @keyframes unlockBoxFade {
-    0% { opacity: 1; transform: translateY(0) scale(1); }
-    45% { opacity: 1; transform: translateY(-2px) scale(1.01); }
-    100% { opacity: 0; transform: translateY(-12px) scale(.985); }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .lock-icon .lock-shackle,
-    .lock-icon .lock-body,
-    .lock-icon .lock-keyhole,
-    .lock-overlay.unlocking .lock-box { animation: none !important; transition: none !important; }
-  }
-
-  @media print {
-    body { background: #ffffff !important; color: #000000 !important; padding-bottom: 0 !important; }
-    .meta-icons, .write-btn, .search-area, .pinned-area, .email-area, .settings-area, .editor-overlay, .confirm-overlay, .lock-overlay, #status-toast, .entry-actions { display: none !important; }
-    .year-group.is-collapsed .track { display: block !important; }
-    .entry { page-break-inside: avoid; }
-  }
-
-  [data-netlify-drawers], netlify-drawer, iframe[data-netlify-deploy-id], #netlify-notification-root { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
-</style>
-</head>
-<!-- body 默认包含 is-locked 类，保障在 HTML 解析首帧即隐藏底部内容 -->
-<body class="light is-locked">
-<div id="status-toast"></div>
-
-<!-- 锁屏验证/设置弹窗 -->
-<div class="lock-overlay" id="lockOverlay">
-  <div class="lock-box">
-    <div class="lock-icon-wrap" aria-hidden="true">
-      <svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-        <g class="lock-shackle">
-          <path d="M7 10V7a5 5 0 0 1 10 0v3"></path>
-        </g>
-        <rect class="lock-body" x="4" y="10" width="16" height="11" rx="2"></rect>
-        <circle class="lock-keyhole" cx="12" cy="15" r="1" fill="currentColor" stroke="none"></circle>
-        <path class="lock-keyhole" d="M12 16v2"></path>
-      </svg>
-    </div>
-    <div style="font-size:0.8rem; color:var(--muted); margin-bottom:15px;" id="lockPromptText">请输入 PIN 码以解锁应用</div>
-    <input type="password" id="pinCodeInput" class="pin-input" maxlength="6" pattern="[0-9]*" inputmode="numeric" placeholder="••••">
-    <button class="btn-save" id="unlockAppBtn" style="margin-top:5px;">验证解锁</button>
-    <button class="btn-cancel-lock" id="cancelLockBtn" style="display:none;">取消</button>
-  </div>
-</div>
-
-<header>
-  <h1 class="site-title">Mutopia</h1>
-  <div class="site-meta">
-    <div class="meta-icons">
-      <!-- 1. 邮箱图标 -->
-      <div class="meta-trigger" id="emailBtn" title="邮箱自动备份配置">
-        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-          <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
-        </svg>
-      </div>
-      <!-- 2. 置顶图标 -->
-      <div class="meta-trigger" id="pinBtn" title="查看置顶">
-        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A.5.5 0 0 0 6.36 14L12 14l5.64 0a.5.5 0 0 0 .25-.55l-1.78-.9A2 2 0 0 1 15 10.76V6a3 3 0 0 0-6 0v4.76ZM15 5h-6"></path>
-        </svg>
-      </div>
-      <!-- 3. 检索图标 -->
-      <div class="meta-trigger" id="searchBtn" title="检索记忆">
-        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
-      </div>
-      <!-- 4. 设置图标 -->
-      <div class="meta-trigger" id="settingsBtn" title="系统设置">
-        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="3"></circle>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-        </svg>
-      </div>
-    </div>
-    <div class="meta-row">
-      <span>TOTAL</span>
-      <span class="val" id="totalCount">00</span>
-    </div>
-    <div class="meta-row">
-      <span>SINCE</span>
-      <span class="val" id="sinceYear">2026</span>
-    </div>
-  </div>
-</header>
-
-<div class="email-area" id="emailArea">
-  <div class="email-card" style="display: flex; flex-direction: column; gap: 14px;">
-    <div style="border-bottom: 1px dashed var(--border); padding-bottom: 6px;">
-      <input id="inline-email" type="email" autocomplete="off" placeholder="接收备份的邮箱 (如 user@qq.com)...">
-    </div>
-    <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; width: 100%;">
-      <div id="email-status-tip" style="display: flex; flex-direction: column; gap: 16px; justify-content: center;"></div>
-      <div style="display: flex; flex-direction: column; gap: 16px; align-items: flex-end; flex-shrink: 0; justify-content: center;">
-        <button class="btn-action-text" id="saveEmailBtn">保存邮箱</button>
-        <button class="btn-action-text" id="manualBackupBtn">备份到邮箱</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- 设置面板 -->
-<div class="settings-area" id="settingsArea">
-  <div class="settings-card">
-    <div class="setting-icon-item" id="themeToggleBtnAction">
-      <div class="setting-item-left">
-        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" id="theme-icon-svg">
-          <circle cx="12" cy="12" r="5"></circle>
-          <line x1="12" y1="1" x2="12" y2="3"></line>
-          <line x1="12" y1="21" x2="12" y2="23"></line>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-          <line x1="1" y1="12" x2="3" y2="12"></line>
-          <line x1="21" y1="12" x2="23" y2="12"></line>
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-        </svg>
-        <span>暗夜模式 (Dark Mode)</span>
-      </div>
-      <div class="switch-toggle" id="themeSwitch"></div>
-    </div>
-
-    <div class="setting-icon-item" id="exportJsonBtnAction">
-      <div class="setting-item-left">
-        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-          <polyline points="17 8 12 3 7 8"></polyline>
-          <line x1="12" y1="3" x2="12" y2="15"></line>
-        </svg>
-        <span>导出 JSON 备份数据</span>
-      </div>
-      <div class="switch-toggle" id="exportJsonSwitch"></div>
-    </div>
-
-    <div class="setting-icon-item" id="importTriggerBtn">
-      <div class="setting-item-left">
-        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-          <polyline points="7 10 12 15 17 10"></polyline>
-          <line x1="12" y1="15" x2="12" y2="3"></line>
-        </svg>
-        <span>导入 JSON 恢复数据</span>
-      </div>
-      <div class="switch-toggle" id="importSwitch"></div>
-      <input type="file" id="fileInput" accept=".json" style="display:none;">
-    </div>
-
-    <div class="setting-icon-item" id="exportPdfBtnAction">
-      <div class="setting-item-left">
-        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="6 9 6 2 18 2 18 9"></polyline>
-          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-          <rect x="6" y="14" width="12" height="8"></rect>
-        </svg>
-        <span>导出 PDF 打印文档</span>
-      </div>
-      <div class="switch-toggle" id="exportPdfSwitch"></div>
-    </div>
-
-    <div class="setting-icon-item" id="appLockToggleBtnAction">
-      <div class="setting-item-left">
-        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-        </svg>
-        <span id="appLockTitle">应用安全锁 (PIN 码)</span>
-      </div>
-      <div class="switch-toggle" id="appLockSwitch"></div>
-    </div>
-
-  </div>
-</div>
-
-<div class="search-area" id="searchArea">
-  <div class="panel-box-wrapper">
-    <input id="inline-search" autocomplete="off" spellcheck="false" placeholder="检索记忆...">
-  </div>
-  <div id="search-results-panel" class="results-dropdown"></div>
-</div>
-
-<div class="pinned-area" id="pinnedArea">
-  <div class="pinned-card">
-    <div id="pinned-results-panel" style="max-height: 250px; overflow-y: auto;"></div>
-  </div>
-</div>
-
-<div class="container" id="timeline"></div>
-
-<button class="write-btn" id="writeBtnAction">＋ 写一条</button>
-
-<div class="editor-overlay" id="overlay">
-  <div class="editor-box" onclick="event.stopPropagation()">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <button class="year-nav-btn" id="prevYearBtn" title="上一年">&lt;</button>
-        <span id="editor-year-title" style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted);font-weight:normal;">2026</span>
-        <button class="year-nav-btn" id="nextYearBtn" title="下一年">&gt;</button>
-      </div>
-      <button id="closeEditorAction" style="background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;">✕</button>
-    </div>
-
-    <div class="heatmap-card" id="heatmapCard"></div>
-
-    <div class="field"><input id="inp-title" placeholder="标题 (可选)"></div>
-    <div class="field"><textarea id="inp-body" placeholder="此时此刻的心情..."></textarea></div>
-    <button class="btn-save" id="btn-save-action">保存记录</button>
-  </div>
-</div>
-
-<div class="confirm-overlay" id="confirmOverlay">
-  <div class="confirm-box">
-    <div class="confirm-txt" id="confirmTxt">确定执行此操作吗？</div>
-    <div class="confirm-btns">
-      <button class="btn-no" id="closeConfirmAction">取消</button>
-      <button class="btn-yes" id="confirmActionBtn">确认</button>
-    </div>
-  </div>
-</div>
-
-<script>
-  // Service Worker 离线加载
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      const swCode = `
-        const CACHE_NAME = 'mutopia-cache-v4';
-        const ASSETS_TO_CACHE = [
-          './',
-          'index.html',
-          'https://fonts.font.im/css2?family=Noto+Serif+SC:wght@300;400;500&family=DM+Mono:ital@0;1&display=swap',
-          'https://fonts.cdnfonts.com/css/halimun'
-        ];
-
-        self.addEventListener('install', (e) => {
-          e.waitUntil(
-            caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE)).then(() => self.skipWaiting())
-          );
-        });
-
-        self.addEventListener('activate', (e) => {
-          e.waitUntil(
-            caches.keys().then((keys) => {
-              return Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)));
-            }).then(() => self.clients.claim())
-          );
-        });
-
-        self.addEventListener('fetch', (e) => {
-          if (e.request.method !== 'GET') return;
-          e.respondWith(
-            caches.match(e.request).then((cachedResponse) => {
-              if (cachedResponse) {
-                fetch(e.request).then((networkResponse) => {
-                  if (networkResponse && networkResponse.status === 200) {
-                    caches.open(CACHE_NAME).then((cache) => cache.put(e.request, networkResponse));
-                  }
-                }).catch(() => {});
-                return cachedResponse;
-              }
-              return fetch(e.request).then((networkResponse) => {
-                if (networkResponse && networkResponse.status === 200) {
-                  const resClone = networkResponse.clone();
-                  caches.open(CACHE_NAME).then((cache) => cache.put(e.request, resClone));
-                }
-                return networkResponse;
-              }).catch(() => {
-                if (e.request.headers.get('accept')?.includes('text/html')) {
-                  return caches.match('./') || caches.match('index.html');
-                }
-              });
-            })
-          );
-        });
-      `;
-
-      try {
-        const blob = new Blob([swCode], { type: 'application/javascript' });
-        const swUrl = URL.createObjectURL(blob);
-        navigator.serviceWorker.register(swUrl).catch(err => console.log("SW Alert:", err));
-      } catch (e) { console.error(e); }
-    });
-  }
-
-  const BACKUP_API_ENDPOINT = "https://mutopia-backup-api.humutopia.workers.dev/";
-
-  let currentActionId = null;
-  let currentActionType = null; 
-  let allEntries = []; 
-  let currentHeatmapYear = new Date().getFullYear();
-
-  function showToast(msg) { 
-    const t = document.getElementById('status-toast'); 
-    if(!t) return;
-    t.innerText = msg; 
-    t.style.display = 'block'; 
-    setTimeout(() => t.style.display = 'none', 2200); 
-  }
-
-  function triggerSwitchPulse(el) {
-    if (!el) return;
-    el.classList.add('active');
-    setTimeout(() => el.classList.remove('active'), 400);
-  }
-
-  function parseSafeDate(rawDate) {
-    if (!rawDate) return new Date();
-    if (typeof rawDate === 'number') {
-      return new Date(rawDate < 10000000000 ? rawDate * 1000 : rawDate);
-    }
-    const d = new Date(rawDate);
-    return isNaN(d.getTime()) ? new Date() : d;
-  }
-
-  function formatDateKey(d) {
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  }
-
-  function formatDateWithDot(d) {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const hours = String(d.getHours()).padStart(2, '0');
-    const minutes = String(d.getMinutes()).padStart(2, '0');
-    return `<span class="num-font">${year}</span>.<span class="num-font">${month}</span>.<span class="num-font">${day}</span> <span class="num-font">${hours}</span>:<span class="num-font">${minutes}</span>`;
-  }
-
-  function loadLocalEntries() {
-    try {
-      const data = localStorage.getItem('my_local_space_data');
-      allEntries = data ? JSON.parse(data) : [];
-      if(!Array.isArray(allEntries)) allEntries = [];
-      allEntries.forEach(e => {
-        const safeD = parseSafeDate(e.date || e.timestamp || e.created_at);
-        e.date = safeD.toISOString();
-      });
-    } catch(e) {
-      allEntries = [];
-    }
-  }
-
-  function saveLocalEntries() {
-    localStorage.setItem('my_local_space_data', JSON.stringify(allEntries));
-  }
-
-  function renderHeatmap(targetYear) {
-    const card = document.getElementById('heatmapCard');
-    if (!card) return;
-    card.innerHTML = '';
-
-    if (targetYear) {
-      currentHeatmapYear = targetYear;
-    }
-
-    const yearTitleEl = document.getElementById('editor-year-title');
-    if (yearTitleEl) yearTitleEl.innerText = `${currentHeatmapYear}`;
-
-    const dateMap = {};
-    allEntries.forEach(e => {
-      const d = parseSafeDate(e.date);
-      if (d.getFullYear() === currentHeatmapYear) {
-        const k = formatDateKey(d);
-        if (!dateMap[k]) dateMap[k] = [];
-        dateMap[k].push(e);
-      }
-    });
-
-    const grid = document.createElement('div');
-    grid.className = 'heatmap-grid';
-
-    const startDate = new Date(currentHeatmapYear, 0, 1);
-    const endDate = new Date(currentHeatmapYear, 11, 31);
-
-    const startDayOfWeek = (startDate.getDay() + 6) % 7; 
-    const firstMonday = new Date(startDate);
-    firstMonday.setDate(startDate.getDate() - startDayOfWeek);
-
-    const totalDays = Math.ceil((endDate - firstMonday) / (1000 * 60 * 60 * 24)) + 1;
-    const totalCols = Math.ceil(totalDays / 7);
-
-    grid.style.gridTemplateColumns = `repeat(${totalCols}, 13px)`;
-
-    const currPointer = new Date(firstMonday);
-
-    for (let col = 0; col < totalCols; col++) {
-      for (let row = 0; row < 7; row++) {
-        const dateKey = formatDateKey(currPointer);
-        const isTargetYear = currPointer.getFullYear() === currentHeatmapYear;
-
-        const entriesToday = isTargetYear ? (dateMap[dateKey] || []) : [];
-        const count = entriesToday.length;
-
-        let level = 0;
-        if (isTargetYear && count > 0) {
-          if (count >= 4) level = 4;
-          else if (count === 3) level = 3;
-          else if (count === 2) level = 2;
-          else level = 1;
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Dwmy Spatial Planner</title>
+    <meta name="description" content="Dwmy - Spatial calendar and personal planner with realistic environmental background, floating frosted glass window, multi-plane layering, ambient lighting, and clean flat orientation." />
+    
+    <!-- React 18 & ReactDOM -->
+    <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+    <!-- Babel Standalone for in-browser JSX compilation without Node/build step -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              'royal-maison': ["'royal-maison'", "'Royal Maison'", 'cursive', 'sans-serif'],
+              'signatie': ["'signatie'", "'Signatie'", 'cursive', 'sans-serif'],
+              'bitteva': ["'bitteva-script'", "'Bitteva Script'", 'cursive', 'sans-serif'],
+              'halimun': ["'Halimun'", "'halimun'", 'cursive', 'sans-serif'],
+              'fraunces': ["'Fraunces'", 'Georgia', 'serif'],
+              'mono': ["'IBM Plex Mono'", 'monospace'],
+              'sans': ["'Inter'", '-apple-system', 'BlinkMacSystemFont', "'Segoe UI'", 'Roboto', 'sans-serif'],
+            }
+          }
         }
+      }
+    </script>
 
-        const cell = document.createElement('div');
-        cell.className = 'heatmap-cell';
-        cell.setAttribute('data-level', level);
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
 
-        if (!isTargetYear) {
-          cell.style.opacity = '0.12';
-          cell.title = dateKey;
-        } else {
-          cell.title = `${dateKey}: ${count} 条记录`;
-          if (count > 0) {
-            cell.onclick = () => {
-              document.getElementById('overlay').classList.remove('open');
-              showToast(`${dateKey} 共 ${count} 条记录`);
-              jumpToDate(dateKey);
+      @font-face {
+        font-family: 'royal-maison';
+        src: url('./fonts/RoyalMaisonScript.ttf') format('truetype'),
+             url('./public/fonts/RoyalMaisonScript.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Royal Maison';
+        src: url('./fonts/RoyalMaisonScript.ttf') format('truetype'),
+             url('./public/fonts/RoyalMaisonScript.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'royal-maison-serif';
+        src: url('./fonts/RoyalMaisonSerif.ttf') format('truetype'),
+             url('./public/fonts/RoyalMaisonSerif.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'signatie';
+        src: url('./fonts/Signatie.otf') format('opentype'),
+             url('./public/fonts/Signatie.otf') format('opentype');
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'bitteva-script';
+        src: url('./fonts/BittevaScript.ttf') format('truetype'),
+             url('./public/fonts/BittevaScript.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'halimun';
+        src: url('./fonts/Halimun.ttf') format('truetype'),
+             url('./public/fonts/Halimun.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Halimun';
+        src: url('./fonts/Halimun.ttf') format('truetype'),
+             url('./public/fonts/Halimun.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
+      }
+
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background-color: #0b0e11;
+        color: #ede7d8;
+        overflow-x: hidden;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        touch-action: manipulation;
+      }
+
+      /* Custom scrollbar */
+      ::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.02);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 9999px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      .hide-native-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+        scrollbar-color: transparent transparent;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+      }
+      .hide-native-scrollbar::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState, useEffect, useRef, useCallback, createContext, useContext } = React;
+
+      // --- SVG ICONS ---
+      const IconBase = ({ size = 15, strokeWidth = 2, className = '', style, children, viewBox = '0 0 24 24' }) => (
+        <svg
+          width={size}
+          height={size}
+          viewBox={viewBox}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={className}
+          style={style}
+        >
+          {children}
+        </svg>
+      );
+
+      const Maximize2 = (p) => <IconBase {...p}><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></IconBase>;
+      const Minimize2 = (p) => <IconBase {...p}><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></IconBase>;
+      const Sun = (p) => <IconBase {...p}><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></IconBase>;
+      const Moon = (p) => <IconBase {...p}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></IconBase>;
+      const Calendar = (p) => <IconBase {...p}><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></IconBase>;
+      const Clock = (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></IconBase>;
+      const Trash2 = (p) => <IconBase {...p}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></IconBase>;
+      const Layers = (p) => <IconBase {...p}><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 12.5-8.58 3.91a2 2 0 0 1-1.66 0L2 12.5"/><path d="m22 17.5-8.58 3.91a2 2 0 0 1-1.66 0L2 17.5"/></IconBase>;
+      const Check = (p) => <IconBase {...p} strokeWidth={p.strokeWidth || 2.5}><polyline points="20 6 9 17 4 12"/></IconBase>;
+      const CheckCircle2 = (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></IconBase>;
+      const ChevronLeft = (p) => <IconBase {...p}><path d="m15 18-6-6 6-6"/></IconBase>;
+      const ChevronRight = (p) => <IconBase {...p}><path d="m9 18 6-6-6-6"/></IconBase>;
+      const Plus = (p) => <IconBase {...p}><path d="M5 12h14"/><path d="M12 5v14"/></IconBase>;
+      const X = (p) => <IconBase {...p}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></IconBase>;
+      const RotateCcw = (p) => <IconBase {...p}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></IconBase>;
+
+      // --- DATE UTILS ---
+      const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+      const MONTHS = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+      ];
+      const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+      const pad = (n) => String(n).padStart(2, "0");
+
+      const toISO = (d) => {
+        const safeD = d instanceof Date && !isNaN(d.getTime()) ? d : new Date();
+        return `${safeD.getFullYear()}-${pad(safeD.getMonth() + 1)}-${pad(safeD.getDate())}`;
+      };
+
+      const fromISO = (s) => {
+        if (!s || typeof s !== 'string') return new Date();
+        const [y, m, d] = s.split("-").map(Number);
+        return new Date(y, (m || 1) - 1, d || 1);
+      };
+
+      const addDays = (d, n) => {
+        const safeD = d instanceof Date && !isNaN(d.getTime()) ? d : new Date();
+        const r = new Date(safeD);
+        r.setDate(r.getDate() + n);
+        return r;
+      };
+
+      const addMonths = (d, n) => {
+        const safeD = d instanceof Date && !isNaN(d.getTime()) ? d : new Date();
+        const r = new Date(safeD);
+        r.setMonth(r.getMonth() + n);
+        return r;
+      };
+
+      const addYears = (d, n) => {
+        const safeD = d instanceof Date && !isNaN(d.getTime()) ? d : new Date();
+        const r = new Date(safeD);
+        r.setFullYear(r.getFullYear() + n);
+        return r;
+      };
+
+      const startOfWeek = (d) => {
+        const safeD = d instanceof Date && !isNaN(d.getTime()) ? d : new Date();
+        const day = safeD.getDay();
+        const diff = day === 0 ? -6 : 1 - day;
+        return addDays(safeD, diff);
+      };
+
+      const isSameDay = (a, b) => {
+        if (!a || !b) return false;
+        return toISO(a) === toISO(b);
+      };
+
+      const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+      const formatTaskTimestamp = (task) => {
+        if (task.date) {
+          const parts = task.date.split('-').map(Number);
+          if (parts.length === 3) {
+            const [y, m, day] = parts;
+            let timeStr = task.time;
+            if (!timeStr && task.createdAt) {
+              const d = new Date(task.createdAt);
+              if (!isNaN(d.getTime())) {
+                timeStr = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+              }
+            }
+            return `${y}.${m}.${day} ${timeStr || '09:00'}`;
+          }
+        }
+        if (task.createdAt) {
+          const d = new Date(task.createdAt);
+          if (!isNaN(d.getTime())) {
+            return `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+          }
+        }
+        const now = new Date();
+        return `${now.getFullYear()}.${now.getMonth() + 1}.${now.getDate()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      };
+
+      // --- SOUND MANAGER ---
+      class SoundManager {
+        constructor() {
+          this.ctx = null;
+          this.audioPool = [];
+          this.poolIndex = 0;
+
+          if (typeof window !== 'undefined') {
+            try {
+              const soundUrls = ['./sounds/check-ding.wav', './public/sounds/check-ding.wav'];
+              for (let i = 0; i < 3; i++) {
+                const a = new Audio(soundUrls[0]);
+                a.volume = 0.65;
+                this.audioPool.push(a);
+              }
+            } catch (e) {}
+
+            const unlock = () => {
+              const ctx = this.getContext();
+              if (ctx && ctx.state === 'suspended') {
+                ctx.resume();
+              }
             };
-          } else {
-            cell.onclick = () => showToast(`${dateKey}: 暂无记录`);
+            window.addEventListener('pointerdown', unlock, { once: true });
+            window.addEventListener('keydown', unlock, { once: true });
           }
         }
 
-        grid.appendChild(cell);
-        currPointer.setDate(currPointer.getDate() + 1);
-      }
-    }
-
-    card.appendChild(grid);
-
-    setTimeout(() => {
-      card.scrollLeft = card.scrollWidth;
-    }, 50);
-  }
-
-  document.getElementById('prevYearBtn').onclick = () => {
-    renderHeatmap(currentHeatmapYear - 1);
-  };
-
-  document.getElementById('nextYearBtn').onclick = () => {
-    renderHeatmap(currentHeatmapYear + 1);
-  };
-
-  function jumpToDate(dateKey) {
-    const matched = allEntries.find(e => formatDateKey(parseSafeDate(e.date)) === dateKey);
-    if (matched) {
-      jumpToEntry(matched.id);
-    }
-  }
-
-  // --- 应用安全锁 ---
-  const lockOverlay = document.getElementById('lockOverlay');
-  const pinCodeInput = document.getElementById('pinCodeInput');
-  const unlockAppBtn = document.getElementById('unlockAppBtn');
-  const cancelLockBtn = document.getElementById('cancelLockBtn');
-  const lockPromptText = document.getElementById('lockPromptText');
-  const appLockSwitch = document.getElementById('appLockSwitch');
-  let isSettingPinMode = false; 
-
-  function updateLockStatusUI() {
-    const savedPin = localStorage.getItem('mutopia_app_pin');
-    if (appLockSwitch) {
-      if (savedPin) appLockSwitch.classList.add('active');
-      else appLockSwitch.classList.remove('active');
-    }
-  }
-
-  function checkAppLock() {
-    const savedPin = localStorage.getItem('mutopia_app_pin');
-    if (savedPin) {
-      isSettingPinMode = false;
-      lockPromptText.innerText = "请输入 4~6 位 PIN 码以解锁应用";
-      unlockAppBtn.innerText = "验证解锁";
-      pinCodeInput.value = '';
-      cancelLockBtn.style.display = 'none';
-      lockOverlay.style.display = 'flex';
-      document.body.classList.add('is-locked');
-      setTimeout(() => pinCodeInput.focus(), 200);
-    } else {
-      lockOverlay.style.display = 'none';
-      document.body.classList.remove('is-locked');
-    }
-  }
-
-  unlockAppBtn.onclick = handlePinSubmit;
-  cancelLockBtn.onclick = () => {
-    lockOverlay.style.display = 'none';
-    document.body.classList.remove('is-locked');
-    pinCodeInput.value = '';
-    isSettingPinMode = false;
-  };
-  pinCodeInput.onkeyup = (e) => { if (e.key === 'Enter') handlePinSubmit(); };
-
-  function handlePinSubmit() {
-    const val = pinCodeInput.value.trim();
-    const savedPin = localStorage.getItem('mutopia_app_pin');
-
-    if (isSettingPinMode) {
-      if (val.length < 4 || val.length > 6 || !/^\d+$/.test(val)) {
-        showToast("请输入 4~6 位纯数字 PIN 码");
-        return;
-      }
-      localStorage.setItem('mutopia_app_pin', val);
-      lockOverlay.style.display = 'none';
-      document.body.classList.remove('is-locked');
-      updateLockStatusUI();
-      showToast("应用锁定成功");
-      isSettingPinMode = false;
-      return;
-    }
-
-    if (val === savedPin) {
-      pinCodeInput.value = '';
-      unlockAppBtn.disabled = true;
-      lockOverlay.classList.add('unlocking');
-
-      setTimeout(() => {
-        lockOverlay.style.display = 'none';
-        document.body.classList.remove('is-locked');
-        lockOverlay.classList.remove('unlocking');
-        unlockAppBtn.disabled = false;
-        showToast("解锁成功");
-      }, 600);
-    } else {
-      showToast("PIN 码错误，请重试");
-      pinCodeInput.value = '';
-    }
-  }
-
-  document.getElementById('appLockToggleBtnAction').onclick = () => {
-    const savedPin = localStorage.getItem('mutopia_app_pin');
-    settingsArea.classList.remove('active');
-
-    if (savedPin) {
-      localStorage.removeItem('mutopia_app_pin');
-      updateLockStatusUI();
-      showToast("已关闭应用安全锁");
-    } else {
-      isSettingPinMode = true;
-      lockPromptText.innerText = "请设置新的 4~6 位数字 PIN 码";
-      unlockAppBtn.innerText = "保存 PIN 码";
-      pinCodeInput.value = '';
-      cancelLockBtn.style.display = 'block';
-      lockOverlay.style.display = 'flex';
-      document.body.classList.add('is-locked');
-      setTimeout(() => pinCodeInput.focus(), 200);
-    }
-  };
-
-  // --- 自动邮件备份 ---
-  async function triggerEmailBackup(isManual = false) {
-    const userEmail = localStorage.getItem('mutopia_backup_email');
-    if (!userEmail) {
-      if (isManual) showToast("请先配置接收邮箱");
-      return;
-    }
-
-    if (allEntries.length === 0) {
-      if (isManual) showToast("暂无数据可备份");
-      return;
-    }
-
-    if (isManual) showToast("正在发送备份邮件...");
-
-    try {
-      const res = await fetch(BACKUP_API_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to_email: userEmail,
-          backup_date: new Date().toLocaleString('zh-CN'),
-          backup_content: JSON.stringify(allEntries, null, 2)
-        })
-      });
-
-      if (res.ok) {
-        const now = Date.now();
-        localStorage.setItem('mutopia_last_backup_time', now.toString());
-        updateEmailStatusTip();
-        showToast("JSON 备份文件已发送至邮箱！");
-      } else {
-        showToast("发送失败，请检查网络");
-      }
-    } catch (err) {
-      showToast("无法连接到备份服务器");
-    }
-  }
-
-  function checkAndAutoBackup() {
-    const userEmail = localStorage.getItem('mutopia_backup_email');
-    if (!userEmail) return;
-
-    const now = Date.now();
-    let lastBackup = localStorage.getItem('mutopia_last_backup_time');
-
-    if (!lastBackup) {
-      const randomOffsetDays = Math.floor(Math.random() * 7);
-      const initialFakeLastBackup = now - (randomOffsetDays * 86400000);
-      localStorage.setItem('mutopia_last_backup_time', initialFakeLastBackup.toString());
-      lastBackup = initialFakeLastBackup;
-    }
-
-    const daysPassed = (now - Number(lastBackup)) / (1000 * 60 * 60 * 24);
-    if (daysPassed >= 7) {
-      triggerEmailBackup(false);
-    }
-  }
-
-  function updateEmailStatusTip() {
-    const tip = document.getElementById('email-status-tip');
-    const userEmail = localStorage.getItem('mutopia_backup_email');
-    const lastBackup = localStorage.getItem('mutopia_last_backup_time');
-
-    if (!userEmail) {
-      tip.innerHTML = "<span class=\"btn-action-text\" style=\"color: var(--muted); cursor: default;\">未设置接收邮箱</span><span class=\"btn-action-text\" style=\"color: var(--muted); cursor: default;\">未开启自动备份</span>";
-      return;
-    }
-
-    let lastBackupStr = "暂无备份记录";
-    let remainingStr = `<span class="num-font">7</span>天`;
-
-    if (lastBackup) {
-      const lastBackupDate = new Date(Number(lastBackup));
-      lastBackupStr = formatDateWithDot(lastBackupDate);
-
-      const nextBackupTime = Number(lastBackup) + (7 * 24 * 60 * 60 * 1000);
-      const diffMs = nextBackupTime - Date.now();
-      
-      if (diffMs <= 0) {
-        remainingStr = "即将触发";
-      } else {
-        const hoursLeft = Math.floor(diffMs / (1000 * 60 * 60));
-        const daysLeft = Math.floor(hoursLeft / 24);
-        const remHours = hoursLeft % 24;
-        remainingStr = daysLeft > 0 ? `<span class="num-font">${daysLeft}</span>天<span class="num-font">${remHours}</span>小时` : `<span class="num-font">${hoursLeft}</span>小时`;
-      }
-    }
-
-    tip.innerHTML = `<span class="btn-action-text" style="color: var(--muted); cursor: default;">下次自动备份: 还剩 ${remainingStr}</span><span class="btn-action-text" style="color: var(--muted); cursor: default;">上次备份时间: ${lastBackupStr}</span>`;
-  }
-
-  function flattenAndNormalizeJson(obj, results = [], depth = 0) {
-    if (!obj || depth > 10) return results;
-    if (Array.isArray(obj)) {
-      obj.forEach(item => flattenAndNormalizeJson(item, results, depth + 1));
-      return results;
-    }
-    if (typeof obj === 'object') {
-      let bodyText = obj.body || obj.content || obj.text || obj.caption || '';
-      let titleText = obj.title || '';
-      
-      if (!bodyText && titleText) {
-        bodyText = titleText;
-        titleText = '';
-      }
-
-      let rawTime = obj.date || obj.timestamp || obj.creation_timestamp || obj.created_at || obj.createTime || obj.time;
-      let d = parseSafeDate(rawTime);
-
-      if (bodyText && typeof bodyText === 'string') {
-        results.push({
-          id: String(obj.id || ('item_' + d.getTime() + '_' + Math.random().toString(36).substring(2,7))),
-          title: String(titleText || ''),
-          body: String(bodyText),
-          date: d.toISOString(),
-          pinned: !!obj.pinned
-        });
-        return results;
-      }
-
-      for (let k in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, k)) {
-          flattenAndNormalizeJson(obj[k], results, depth + 1);
+        getContext() {
+          if (!this.ctx && typeof window !== 'undefined') {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) this.ctx = new AudioCtx();
+          }
+          if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume().catch(() => {});
+          }
+          return this.ctx;
         }
-      }
-    }
-    return results;
-  }
 
-  // 数据恢复
-  document.getElementById('importTriggerBtn').onclick = () => {
-    triggerSwitchPulse(document.getElementById('importSwitch'));
-    document.getElementById('fileInput').click();
-  };
-  
-  document.getElementById('fileInput').onchange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const importedRaw = JSON.parse(event.target.result);
-        const parsedEntries = flattenAndNormalizeJson(importedRaw);
-        if (parsedEntries.length > 0) {
-          const existMap = new Map(allEntries.map(item => [item.id, item]));
-          parsedEntries.forEach(item => existMap.set(item.id, item));
+        playCompleteSound() {
+          try {
+            if (this.audioPool.length > 0) {
+              const a = this.audioPool[this.poolIndex];
+              this.poolIndex = (this.poolIndex + 1) % this.audioPool.length;
+              a.currentTime = 0;
+              const p = a.play();
+              if (p && p.catch) p.catch(() => this.synthesizeChime());
+            } else {
+              this.synthesizeChime();
+            }
+          } catch {
+            this.synthesizeChime();
+          }
+        }
+
+        synthesizeChime() {
+          const ctx = this.getContext();
+          if (!ctx) return;
+          const now = ctx.currentTime;
           
-          allEntries = Array.from(existMap.values());
-          saveLocalEntries();
-          renderTimeline();
-          settingsArea.classList.remove('active');
-          showToast(`成功导入合并 ${parsedEntries.length} 条记录`);
-        } else {
-          showToast("未找到有效数据");
+          const freqs = [1567.98, 2349.32];
+          freqs.forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now);
+
+            const initialGain = idx === 0 ? 0.35 : 0.18;
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(initialGain, now + 0.003);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.5);
+          });
         }
-      } catch (err) {
-        showToast("格式错误，解析失败");
+
+        playUncheckSound() {
+          const ctx = this.getContext();
+          if (!ctx) return;
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1174.66, now);
+          gain.gain.setValueAtTime(0, now);
+          gain.gain.linearRampToValueAtTime(0.06, now + 0.001);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.05);
+        }
       }
-      e.target.value = '';
-    };
-    reader.readAsText(file);
-  };
 
-  // 导出 JSON
-  document.getElementById('exportJsonBtnAction').onclick = () => {
-    triggerSwitchPulse(document.getElementById('exportJsonSwitch'));
-    if (allEntries.length === 0) { showToast("暂无可导出数据"); return; }
-    settingsArea.classList.remove('active');
-    
-    const now = new Date();
-    const dateStr = formatDateKey(now);
-    const jsonStr = JSON.stringify(allEntries, null, 2);
-    const jsonBlob = new Blob([jsonStr], { type: 'application/json' });
-    const aJson = document.createElement('a');
-    aJson.href = URL.createObjectURL(jsonBlob);
-    aJson.download = `mutopia_backup_${dateStr}.json`;
-    aJson.click();
-    URL.revokeObjectURL(aJson.href);
-    showToast("JSON 导出成功");
-  };
+      const soundManager = new SoundManager();
 
-  // 导出 PDF
-  document.getElementById('exportPdfBtnAction').onclick = () => {
-    triggerSwitchPulse(document.getElementById('exportPdfSwitch'));
-    if (allEntries.length === 0) { showToast("暂无可导出数据"); return; }
-    settingsArea.classList.remove('active');
-    setTimeout(() => {
-      document.querySelectorAll('.year-group').forEach(el => el.classList.remove('is-collapsed'));
-      window.print();
-    }, 150);
-  };
+      // --- THEME CONTEXT ---
+      const ThemeContext = createContext();
 
-  const searchArea = document.getElementById('searchArea');
-  const pinnedArea = document.getElementById('pinnedArea');
-  const emailArea = document.getElementById('emailArea');
-  const settingsArea = document.getElementById('settingsArea');
+      const ThemeProvider = ({ children }) => {
+        const [themeMode, setThemeModeState] = useState(() => {
+          if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('humutopia_theme_mode');
+            if (saved === 'light' || saved === 'dark') return saved;
+          }
+          return 'dark';
+        });
 
-  const searchBtn = document.getElementById('searchBtn');
-  const pinBtn = document.getElementById('pinBtn');
-  const emailBtn = document.getElementById('emailBtn');
-  const settingsBtn = document.getElementById('settingsBtn');
+        useEffect(() => {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('humutopia_theme_mode', themeMode);
+          }
+        }, [themeMode]);
 
-  const searchInput = document.getElementById('inline-search');
-  const emailInput = document.getElementById('inline-email');
-  const searchPanel = document.getElementById('search-results-panel');
-  const pinnedPanel = document.getElementById('pinned-results-panel');
+        const toggleTheme = () => setThemeModeState((p) => (p === 'light' ? 'dark' : 'light'));
+        const isDay = themeMode === 'light';
+        const accentColor = '#e5a45b';
 
-  emailBtn.onclick = (e) => {
-    e.stopPropagation();
-    searchArea.classList.remove('active');
-    pinnedArea.classList.remove('active');
-    settingsArea.classList.remove('active');
-    const active = emailArea.classList.toggle('active');
-    if(active) {
-      emailInput.value = localStorage.getItem('mutopia_backup_email') || '';
-      updateEmailStatusTip();
-    }
-  };
+        return (
+          <ThemeContext.Provider value={{ themeMode, isDay, toggleTheme, accentColor }}>
+            {children}
+          </ThemeContext.Provider>
+        );
+      };
 
-  settingsBtn.onclick = (e) => {
-    e.stopPropagation();
-    searchArea.classList.remove('active');
-    pinnedArea.classList.remove('active');
-    emailArea.classList.remove('active');
-    settingsArea.classList.toggle('active');
-  };
+      const useTheme = () => useContext(ThemeContext);
 
-  document.getElementById('saveEmailBtn').onclick = () => {
-    const email = emailInput.value.trim();
-    if (!email) { showToast("请输入有效的邮箱"); return; }
-    localStorage.setItem('mutopia_backup_email', email);
-    updateEmailStatusTip();
-    showToast("邮箱保存成功");
-  };
+      // --- TASKS HOOK ---
+      const STORAGE_KEY = 'dwmy-tasks-spatial-v4';
 
-  document.getElementById('manualBackupBtn').onclick = () => {
-    triggerEmailBackup(true);
-  };
+      function useTasks() {
+        const [tasks, setTasks] = useState([]);
+        const [loaded, setLoaded] = useState(false);
 
-  searchBtn.onclick = (e) => {
-    e.stopPropagation();
-    pinnedArea.classList.remove('active');
-    emailArea.classList.remove('active');
-    settingsArea.classList.remove('active');
-    const active = searchArea.classList.toggle('active');
-    if(active) setTimeout(() => searchInput.focus(), 200);
-  };
+        useEffect(() => {
+          try {
+            if (typeof window !== 'undefined' && window.localStorage) {
+              const local = window.localStorage.getItem(STORAGE_KEY);
+              if (local) {
+                const parsed = JSON.parse(local);
+                if (Array.isArray(parsed)) {
+                  setTasks(parsed);
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('Could not read tasks from storage:', e);
+          } finally {
+            setLoaded(true);
+          }
+        }, []);
 
-  pinBtn.onclick = (e) => {
-    e.stopPropagation();
-    searchArea.classList.remove('active');
-    emailArea.classList.remove('active');
-    settingsArea.classList.remove('active');
-    const active = pinnedArea.classList.toggle('active');
-    if(active) renderPinnedInline();
-  };
+        useEffect(() => {
+          if (!loaded) return;
+          try {
+            if (typeof window !== 'undefined' && window.localStorage) {
+              window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+            }
+          } catch (e) {
+            console.error('Could not save tasks:', e);
+          }
+        }, [tasks, loaded]);
 
-  document.addEventListener('click', (e) => {
-    if (!searchArea.contains(e.target) && !searchBtn.contains(e.target)) {
-      searchArea.classList.remove('active');
-      searchPanel.classList.remove('active');
-    }
-    if (!pinnedArea.contains(e.target) && !pinBtn.contains(e.target)) {
-      pinnedArea.classList.remove('active');
-    }
-    if (!emailArea.contains(e.target) && !emailBtn.contains(e.target)) {
-      emailArea.classList.remove('active');
-    }
-    if (!settingsArea.contains(e.target) && !settingsBtn.contains(e.target)) {
-      settingsArea.classList.remove('active');
-    }
-  });
-
-  const jumpToEntry = (id) => {
-    const target = document.getElementById(`entry-${id}`);
-    if(target) {
-      const parentGroup = target.closest('.year-group');
-      if (parentGroup && parentGroup.classList.contains('is-collapsed')) {
-        parentGroup.classList.remove('is-collapsed');
+        return { tasks, setTasks, loaded };
       }
-      setTimeout(() => {
-        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        target.classList.add('highlight-flash');
-        setTimeout(() => target.classList.remove('highlight-flash'), 2000);
-      }, 100);
-      searchArea.classList.remove('active');
-      pinnedArea.classList.remove('active');
-    }
-  };
 
-  searchInput.oninput = (e) => {
-    const kw = e.target.value.trim().toLowerCase();
-    searchPanel.innerHTML = '';
-    if(!kw) { searchPanel.classList.remove('active'); return; }
-    const res = allEntries.filter(p => (p.title && p.title.toLowerCase().includes(kw)) || (p.body && p.body.toLowerCase().includes(kw)));
-    if(res.length > 0) {
-      searchPanel.classList.add('active');
-      res.forEach(p => {
-        const item = document.createElement('div');
-        item.className = 'res-item';
-        const d = parseSafeDate(p.date);
-        item.innerHTML = `<div class="res-date">${d.toLocaleDateString()}</div><div class="res-title">${escapeHtml(p.title || p.body.substring(0,25))}</div>`;
-        item.onclick = () => jumpToEntry(p.id);
-        searchPanel.appendChild(item);
-      });
-    } else { searchPanel.classList.remove('active'); }
-  };
+      // --- CHECKBOX COMPONENT ---
+      const Checkbox = ({ done, onClick, accentColor, variant = 'filled' }) => {
+        const { isDay, accentColor: contextAccent } = useTheme();
+        const activeColor = accentColor || contextAccent;
+        const isOutline = variant === 'outline';
 
-  function renderPinnedInline() {
-    pinnedPanel.innerHTML = '';
-    const pinned = allEntries.filter(p => p.pinned);
-    if(pinned.length === 0) {
-      pinnedPanel.innerHTML = '<div style="padding:15px 0; font-size:0.72rem; color:var(--muted); text-align:center; font-family:\'DM Mono\'">VOID_ (暂无置顶内容)</div>';
-      return;
-    }
-    pinned.forEach(p => {
-      const item = document.createElement('div');
-      item.className = 'res-item';
-      const d = parseSafeDate(p.date);
-      item.innerHTML = `<div class="res-date">${d.toLocaleDateString()}</div><div class="res-title">${escapeHtml(p.title || p.body.substring(0,25))}</div>`;
-      item.onclick = () => jumpToEntry(p.id);
-      pinnedPanel.appendChild(item);
-    });
-  }
+        return (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick(e);
+            }}
+            className={`relative flex items-center justify-center w-5 h-5 sm:w-[17px] sm:h-[17px] rounded-[4px] border transition-all duration-200 cursor-pointer flex-shrink-0 group ${
+              done
+                ? isOutline
+                  ? isDay
+                    ? 'bg-transparent shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
+                    : 'bg-transparent shadow-[0_0_8px_rgba(229,164,91,0.2)]'
+                  : isDay
+                  ? 'shadow-[0_1px_3px_rgba(0,0,0,0.06)]'
+                  : 'shadow-[0_1px_4px_rgba(0,0,0,0.4)]'
+                : isDay
+                ? 'bg-black/[0.04] border-black/20 hover:border-black/40 hover:bg-black/[0.08]'
+                : 'bg-white/5 border-white/20 hover:border-white/40 hover:bg-white/10 hover:shadow-[0_0_8px_rgba(255,255,255,0.1)]'
+            }`}
+            style={
+              done
+                ? isOutline
+                  ? { borderColor: activeColor }
+                  : { backgroundColor: activeColor, borderColor: activeColor }
+                : undefined
+            }
+            aria-label={done ? 'Mark not done' : 'Mark done'}
+          >
+            {done && (
+              <Check
+                size={12}
+                strokeWidth={2.5}
+                style={isOutline ? { color: activeColor } : undefined}
+                className={`${
+                  isOutline ? '' : isDay ? 'text-white' : 'text-zinc-950'
+                } transition-transform scale-100`}
+              />
+            )}
+          </button>
+        );
+      };
 
-  document.getElementById("writeBtnAction").onclick = () => {
-    document.getElementById('overlay').classList.add('open');
-    renderHeatmap(new Date().getFullYear());
-  };
+      // --- TASK ROW ---
+      const TaskRow = ({ task, onToggle, accentColor, checkboxVariant = 'filled' }) => {
+        const { isDay, accentColor: contextAccent } = useTheme();
+        const activeColor = accentColor || contextAccent;
 
-  document.getElementById("closeEditorAction").onclick = () => document.getElementById('overlay').classList.remove('open');
-  document.getElementById("overlay").onclick = (e) => {
-    if(e.target === document.getElementById("overlay")) document.getElementById('overlay').classList.remove('open');
-  };
+        return (
+          <div
+            onClick={() => onToggle(task.id)}
+            className={`group relative flex items-center gap-2 py-1.5 px-2 rounded-md transition-all duration-150 border border-transparent cursor-pointer min-w-0 ${
+              isDay
+                ? 'hover:bg-black/[0.04] active:bg-black/[0.06]'
+                : 'hover:bg-white/[0.06] active:bg-white/[0.08]'
+            }`}
+          >
+            <Checkbox
+              done={task.done}
+              onClick={() => onToggle(task.id)}
+              accentColor={activeColor}
+              variant={checkboxVariant}
+            />
 
-  document.getElementById("btn-save-action").onclick = () => {
-    const title = document.getElementById('inp-title').value.trim();
-    const body = document.getElementById('inp-body').value.trim();
-    if (!body) return;
+            <span
+              title={task.title}
+              className={`text-xs sm:text-xs leading-normal flex-1 min-w-0 truncate select-none transition-colors ${
+                task.done
+                  ? isDay
+                    ? 'text-zinc-400 line-through decoration-zinc-400/80 font-normal'
+                    : 'text-zinc-500 line-through decoration-zinc-500/80 font-normal'
+                  : isDay
+                  ? 'text-zinc-700 font-normal group-hover:text-zinc-950'
+                  : 'text-zinc-200 font-normal group-hover:text-white'
+              }`}
+            >
+              {task.title}
+            </span>
+          </div>
+        );
+      };
 
-    const newEntry = {
-      id: 'item_' + Date.now(),
-      title,
-      body,
-      date: new Date().toISOString(),
-      pinned: false
-    };
+      // --- QUICK ADD COMPONENT ---
+      const QuickAdd = ({
+        placeholder = 'Add a task…',
+        onSubmit,
+        autoFocus = false,
+        className = '',
+        allowDateSelection = false,
+        initialDate,
+        initialTime,
+      }) => {
+        const { isDay, accentColor } = useTheme();
+        const [value, setValue] = useState('');
+        const [isActive, setIsActive] = useState(false);
 
-    allEntries.unshift(newEntry);
-    saveLocalEntries();
-    renderTimeline();
+        const now = new Date();
+        const todayISO = toISO(now);
+        const defaultCurrentTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
-    document.getElementById('overlay').classList.remove('open');
-    document.getElementById('inp-title').value = ''; 
-    document.getElementById('inp-body').value = ''; 
-    showToast("已保存记录");
+        const [selectedDate, setSelectedDate] = useState(initialDate || todayISO);
+        const [selectedTime, setSelectedTime] = useState(initialTime || defaultCurrentTime);
+        const [isAllDay, setIsAllDay] = useState(false);
 
-    checkAndAutoBackup();
-  };
+        const [showDatePicker, setShowDatePicker] = useState(false);
+        const [showTimePicker, setShowTimePicker] = useState(false);
 
-  window.askAction = (id, type, currentPinned = false) => { 
-    currentActionId = id; 
-    currentActionType = type;
-    const txt = type === 'delete' ? "确定删除此记录吗？" : (currentPinned ? "取消置顶？" : "确定置顶吗？");
-    document.getElementById('confirmTxt').innerText = txt;
-    document.getElementById('confirmOverlay').style.display = 'flex'; 
-  };
-  
-  document.getElementById('closeConfirmAction').onclick = () => { document.getElementById('confirmOverlay').style.display = 'none'; currentActionId = null; };
-  
-  document.getElementById('confirmActionBtn').onclick = () => {
-    if(currentActionType === 'delete') {
-      allEntries = allEntries.filter(e => e.id !== currentActionId);
-      showToast("已删除");
-    } else if(currentActionType === 'pin') {
-      const target = allEntries.find(e => e.id === currentActionId);
-      if(target) target.pinned = !target.pinned;
-      showToast("已更新");
-    }
-    saveLocalEntries();
-    renderTimeline();
-    document.getElementById('confirmOverlay').style.display = 'none';
-  };
+        const [calendarMonth, setCalendarMonth] = useState(() => fromISO(selectedDate || todayISO));
 
-  function renderTimeline() {
-    allEntries.sort((a, b) => parseSafeDate(b.date).getTime() - parseSafeDate(a.date).getTime());
+        const containerRef = useRef(null);
+        const inputRef = useRef(null);
+        const dateDropdownRef = useRef(null);
+        const timeDropdownRef = useRef(null);
 
-    const totalVal = document.getElementById('totalCount');
-    if(totalVal) totalVal.innerText = String(allEntries.length).padStart(2, '0');
+        useEffect(() => {
+          if (autoFocus && inputRef.current) inputRef.current.focus();
+        }, [autoFocus]);
 
-    if(allEntries.length > 0) {
-      const earliestDate = parseSafeDate(allEntries[allEntries.length - 1].date);
-      document.getElementById('sinceYear').innerText = earliestDate.getFullYear() || '2026';
-    }
-    
-    const tl = document.getElementById('timeline'); 
-    tl.innerHTML = ''; 
-    
-    if (allEntries.length === 0) {
-      tl.innerHTML = '<div style="color:var(--muted); font-size:0.8rem; padding:40px 0; text-align:center;">暂无任何历史记录，点击右下角写入第一条吧</div>';
-      return;
-    }
+        useEffect(() => {
+          if (initialDate) {
+            setSelectedDate(initialDate);
+            setCalendarMonth(fromISO(initialDate));
+          }
+        }, [initialDate]);
 
-    const byYear = {};
-    allEntries.forEach(p => {
-      let d = parseSafeDate(p.date);
-      let y = d.getFullYear();
-      if (!byYear[y]) byYear[y] = []; 
-      byYear[y].push(p);
-    });
-    
-    const sortedYears = Object.keys(byYear).sort((a,b) => Number(b) - Number(a));
+        useEffect(() => {
+          const handleDocClick = (e) => {
+            const target = e.target;
+            if (dateDropdownRef.current && !dateDropdownRef.current.contains(target) && !containerRef.current?.contains(target)) {
+              setShowDatePicker(false);
+            }
+            if (timeDropdownRef.current && !timeDropdownRef.current.contains(target) && !containerRef.current?.contains(target)) {
+              setShowTimePicker(false);
+            }
+            if (containerRef.current && !containerRef.current.contains(target)) {
+              if (!value.trim()) {
+                setIsActive(false);
+                setShowDatePicker(false);
+                setShowTimePicker(false);
+              }
+            }
+          };
+          document.addEventListener('pointerdown', handleDocClick);
+          return () => document.removeEventListener('pointerdown', handleDocClick);
+        }, [value]);
 
-    sortedYears.forEach(year => {
-      const group = document.createElement('div'); 
-      group.className = 'year-group';
-      group.setAttribute('data-year', year);
+        const handleInputChange = (e) => {
+          const text = e.target.value;
+          setValue(text);
+          const timeMatch = text.match(/\b([01]?[0-9]|2[0-3]):([0-5][0-9])\b/);
+          if (timeMatch) {
+            setSelectedTime(timeMatch[0]);
+            setIsAllDay(false);
+          }
+        };
 
-      group.innerHTML = `<div class="year-row" onclick="this.parentElement.classList.toggle('is-collapsed')"><span class="year-num">${year}</span><div class="year-line"></div></div>`;
-      
-      const track = document.createElement('div'); 
-      track.className = 'track';
-      
-      byYear[year].forEach(p => {
-        const d = parseSafeDate(p.date); 
-        const timeStr = `${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-        
-        const item = document.createElement('div'); 
-        item.className = `entry ${p.pinned ? 'is-pinned' : ''}`; 
-        item.id = `entry-${p.id}`;
-        
-        item.innerHTML = `
-          <div class="entry-stamp">
-            <div>${timeStr}</div>
-            <div class="entry-actions">
-              <div class="action-btn" onclick="event.stopPropagation(); askAction('${p.id}', 'pin', ${p.pinned})">${p.pinned ? 'UNPIN' : 'PIN'}</div>
-              <div class="action-btn" onclick="event.stopPropagation(); askAction('${p.id}', 'delete')">DELETE</div>
+        const handleSubmit = () => {
+          const trimmed = value.trim();
+          if (!trimmed) {
+            setIsActive(false);
+            setShowDatePicker(false);
+            setShowTimePicker(false);
+            return;
+          }
+          const timeToSubmit = isAllDay ? null : selectedTime || null;
+          onSubmit(trimmed, selectedDate, timeToSubmit);
+          setValue('');
+          setIsActive(false);
+          setShowDatePicker(false);
+          setShowTimePicker(false);
+          if (initialDate) {
+            setSelectedDate(initialDate);
+            setCalendarMonth(fromISO(initialDate));
+          }
+          const freshNow = new Date();
+          setSelectedTime(`${pad(freshNow.getHours())}:${pad(freshNow.getMinutes())}`);
+          setIsAllDay(false);
+        };
+
+        const formatDisplayDate = (isoStr) => {
+          if (!isoStr) return '';
+          const parts = isoStr.split('-').map(Number);
+          if (parts.length !== 3) return isoStr;
+          const [y, m, d] = parts;
+          if (isoStr === todayISO) return `今天 ${pad(m)}.${pad(d)}`;
+          const tomorrowISO = toISO(addDays(now, 1));
+          if (isoStr === tomorrowISO) return `明天 ${pad(m)}.${pad(d)}`;
+          return `${y}.${pad(m)}.${pad(d)}`;
+        };
+
+        const showDateTimeOnLeft = allowDateSelection && (isActive || value.trim().length > 0);
+
+        const calYear = calendarMonth.getFullYear();
+        const calMonth = calendarMonth.getMonth();
+        const firstOfMonth = new Date(calYear, calMonth, 1);
+        const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+        const startDay = startOfWeek(firstOfMonth);
+        const endOfMonth = new Date(calYear, calMonth, daysInMonth);
+        const diffDays = Math.round((endOfMonth.getTime() - startDay.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        const cellCount = diffDays > 35 ? 42 : 35;
+        const calendarCells = Array.from({ length: cellCount }, (_, i) => addDays(startDay, i));
+
+        const [hourPart, minutePart] = (selectedTime || '09:00').split(':').map((v) => parseInt(v, 10) || 0);
+
+        return (
+          <div
+            ref={containerRef}
+            className={`relative flex flex-col transition-all duration-200 rounded-xl border ${
+              isDay
+                ? isActive
+                  ? 'bg-white/90 border-[#c97a2b]/40 shadow-[0_4px_20px_rgba(0,0,0,0.06)]'
+                  : 'bg-black/[0.03] border-black/10 hover:border-black/20'
+                : isActive
+                ? 'bg-white/[0.06] border-[#e5a45b]/40 shadow-[0_4px_25px_rgba(0,0,0,0.5)]'
+                : 'bg-white/[0.03] border-white/10 hover:border-white/20'
+            } ${className}`}
+          >
+            <div className="flex flex-wrap sm:flex-nowrap items-center w-full px-3 py-2 gap-2 relative">
+              <div className="text-zinc-400 flex items-center justify-center flex-shrink-0">
+                <Plus
+                  size={14}
+                  style={isActive ? { color: accentColor } : undefined}
+                  className={!isActive ? (isDay ? 'text-zinc-500' : 'text-zinc-400') : ''}
+                />
+              </div>
+
+              {showDateTimeOnLeft && (
+                <div className="flex items-center gap-1.5 flex-shrink-0 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        if (!showDatePicker) setCalendarMonth(fromISO(selectedDate || todayISO));
+                        setShowDatePicker((p) => !p);
+                        setShowTimePicker(false);
+                      }}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-mono border transition-all cursor-pointer select-none ${
+                        showDatePicker
+                          ? isDay
+                            ? 'bg-[#c97a2b]/15 border-[#c97a2b]/40 text-[#c97a2b]'
+                            : 'bg-[#e5a45b]/15 border-[#e5a45b]/40 text-[#e5a45b]'
+                          : isDay
+                          ? 'bg-black/[0.04] hover:bg-black/[0.08] border-black/[0.08] text-zinc-700'
+                          : 'bg-white/[0.03] hover:bg-white/[0.08] border-white/[0.08] text-zinc-300'
+                      }`}
+                    >
+                      <Calendar size={11} style={{ color: accentColor }} />
+                      <span className="tracking-wide">{formatDisplayDate(selectedDate)}</span>
+                    </button>
+
+                    {showDatePicker && (
+                      <div
+                        ref={dateDropdownRef}
+                        className={`fixed sm:absolute left-1/2 sm:left-0 -translate-x-1/2 sm:translate-x-0 bottom-12 sm:bottom-full sm:mb-2.5 z-50 w-[90vw] sm:w-64 p-3 rounded-xl border transition-all shadow-2xl ${
+                          isDay
+                            ? 'bg-[#f7f9fb] border-black/[0.08] text-zinc-800'
+                            : 'bg-[#1e2228] border-white/[0.12] text-zinc-200'
+                        }`}
+                      >
+                        <div className={`flex items-center justify-between pb-2 mb-2 border-b ${isDay ? 'border-black/[0.06]' : 'border-white/[0.08]'}`}>
+                          <button
+                            type="button"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              setCalendarMonth((p) => addMonths(p, -1));
+                            }}
+                            className={`p-1 rounded-md transition-colors cursor-pointer ${isDay ? 'hover:bg-black/5 text-zinc-500' : 'hover:bg-white/10 text-zinc-400'}`}
+                          >
+                            <ChevronLeft size={14} />
+                          </button>
+                          <span className="font-mono text-[12px] font-medium tracking-wide">
+                            {calYear}年 {calMonth + 1}月
+                          </span>
+                          <button
+                            type="button"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              setCalendarMonth((p) => addMonths(p, 1));
+                            }}
+                            className={`p-1 rounded-md transition-colors cursor-pointer ${isDay ? 'hover:bg-black/5 text-zinc-500' : 'hover:bg-white/10 text-zinc-400'}`}
+                          >
+                            <ChevronRight size={14} />
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-7 gap-1 text-center mb-1">
+                          {['一', '二', '三', '四', '五', '六', '日'].map((w) => (
+                            <span key={w} className={`text-[10px] font-mono font-medium py-0.5 ${isDay ? 'text-zinc-500' : 'text-zinc-400/80'}`}>
+                              {w}
+                            </span>
+                          ))}
+                        </div>
+
+                        <div className="grid grid-cols-7 gap-1">
+                          {calendarCells.map((d) => {
+                            const iso = toISO(d);
+                            const isCurrentM = d.getMonth() === calMonth;
+                            const isSelected = iso === selectedDate;
+                            const isTodayDay = isSameDay(d, now);
+
+                            return (
+                              <button
+                                key={iso}
+                                type="button"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  setSelectedDate(iso);
+                                  setShowDatePicker(false);
+                                  inputRef.current?.focus();
+                                }}
+                                className={`aspect-square rounded-lg flex items-center justify-center font-mono text-[11px] transition-all cursor-pointer relative ${
+                                  isSelected
+                                    ? isDay
+                                      ? 'bg-[#c97a2b] text-white font-semibold'
+                                      : 'bg-[#e5a45b] text-zinc-950 font-semibold'
+                                    : isTodayDay
+                                    ? isDay
+                                      ? 'border border-[#c97a2b]/60 text-[#c97a2b] font-medium'
+                                      : 'border border-[#e5a45b]/60 text-[#e5a45b] font-medium'
+                                    : isCurrentM
+                                    ? isDay
+                                      ? 'text-zinc-700 hover:bg-black/5'
+                                      : 'text-zinc-200 hover:bg-white/10'
+                                    : isDay
+                                    ? 'text-zinc-300'
+                                    : 'text-zinc-600/70'
+                                }`}
+                              >
+                                {d.getDate()}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        <div className={`mt-2.5 pt-2 border-t flex items-center justify-between text-[11px] font-mono ${isDay ? 'border-black/[0.06]' : 'border-white/[0.08]'}`}>
+                          <button
+                            type="button"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              setSelectedDate(todayISO);
+                              setCalendarMonth(new Date());
+                              setShowDatePicker(false);
+                              inputRef.current?.focus();
+                            }}
+                            className="text-[#c97a2b] dark:text-[#e5a45b] hover:underline cursor-pointer"
+                          >
+                            设为今天
+                          </button>
+                          <span className="text-zinc-400 text-[10px]">已选: {selectedDate}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setShowTimePicker((p) => !p);
+                        setShowDatePicker(false);
+                      }}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-mono border transition-all cursor-pointer select-none ${
+                        showTimePicker
+                          ? isDay
+                            ? 'bg-[#c97a2b]/15 border-[#c97a2b]/40 text-[#c97a2b]'
+                            : 'bg-[#e5a45b]/15 border-[#e5a45b]/40 text-[#e5a45b]'
+                          : isDay
+                          ? 'bg-black/[0.04] hover:bg-black/[0.08] border-black/[0.08] text-zinc-700'
+                          : 'bg-white/[0.03] hover:bg-white/[0.08] border-white/[0.08] text-zinc-300'
+                      }`}
+                    >
+                      <Clock size={11} style={{ color: accentColor }} />
+                      <span className="tracking-wide">{isAllDay ? '全天' : selectedTime || '设置时间'}</span>
+                    </button>
+
+                    {showTimePicker && (
+                      <div
+                        ref={timeDropdownRef}
+                        className={`fixed sm:absolute left-1/2 sm:left-0 -translate-x-1/2 sm:translate-x-0 bottom-12 sm:bottom-full sm:mb-2.5 z-50 w-[85vw] sm:w-56 p-3 rounded-xl border transition-all shadow-2xl ${
+                          isDay
+                            ? 'bg-[#f7f9fb] border-black/[0.08] text-zinc-800'
+                            : 'bg-[#1e2228] border-white/[0.12] text-zinc-200'
+                        }`}
+                      >
+                        <div className={`flex items-center justify-between pb-2 mb-2 border-b ${isDay ? 'border-black/[0.06]' : 'border-white/[0.08]'}`}>
+                          <span className="font-mono text-[11px] font-medium text-zinc-500 uppercase tracking-wider">
+                            自定义时间
+                          </span>
+                          <button
+                            type="button"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              setIsAllDay(!isAllDay);
+                            }}
+                            className={`px-2 py-0.5 rounded-md text-[10.5px] font-mono transition-all cursor-pointer border ${
+                              isAllDay
+                                ? isDay
+                                  ? 'bg-[#c97a2b]/20 border-[#c97a2b]/40 text-[#c97a2b] font-medium'
+                                  : 'bg-[#e5a45b]/20 border-[#e5a45b]/40 text-[#e5a45b] font-medium'
+                                : isDay
+                                ? 'border-black/10 text-zinc-600 hover:bg-black/5'
+                                : 'border-white/10 text-zinc-400 hover:bg-white/10'
+                            }`}
+                          >
+                            全天
+                          </button>
+                        </div>
+
+                        {!isAllDay ? (
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-center gap-2 py-1">
+                              <div className="flex flex-col items-center">
+                                <span className="text-[9px] font-mono text-zinc-400 mb-1">时</span>
+                                <select
+                                  value={pad(hourPart)}
+                                  onChange={(e) => setSelectedTime(`${e.target.value}:${pad(minutePart)}`)}
+                                  className={`font-mono text-[14px] font-medium px-2 py-1 rounded-lg border focus:outline-none cursor-pointer ${
+                                    isDay ? 'bg-black/[0.03] border-black/10 text-zinc-800' : 'bg-white/[0.05] border-white/15 text-zinc-100'
+                                  }`}
+                                >
+                                  {Array.from({ length: 24 }, (_, i) => pad(i)).map((h) => (
+                                    <option key={h} value={h} className={isDay ? 'bg-[#f7f9fb] text-zinc-800' : 'bg-[#1e2228] text-zinc-100'}>
+                                      {h}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <span className="font-mono text-[16px] font-bold text-zinc-400 pt-3">:</span>
+
+                              <div className="flex flex-col items-center">
+                                <span className="text-[9px] font-mono text-zinc-400 mb-1">分</span>
+                                <select
+                                  value={pad(minutePart)}
+                                  onChange={(e) => setSelectedTime(`${pad(hourPart)}:${e.target.value}`)}
+                                  className={`font-mono text-[14px] font-medium px-2 py-1 rounded-lg border focus:outline-none cursor-pointer ${
+                                    isDay ? 'bg-black/[0.03] border-black/10 text-zinc-800' : 'bg-white/[0.05] border-white/15 text-zinc-100'
+                                  }`}
+                                >
+                                  {Array.from({ length: 60 }, (_, i) => pad(i)).map((m) => (
+                                    <option key={m} value={m} className={isDay ? 'bg-[#f7f9fb] text-zinc-800' : 'bg-[#1e2228] text-zinc-100'}>
+                                      {m}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-4 gap-1 pt-1">
+                              {['09:00', '12:00', '15:00', '19:00'].map((preset) => (
+                                <button
+                                  key={preset}
+                                  type="button"
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    setSelectedTime(preset);
+                                    setIsAllDay(false);
+                                  }}
+                                  className={`py-1 text-center font-mono text-[10.5px] rounded-md transition-colors cursor-pointer border ${
+                                    selectedTime === preset
+                                      ? isDay
+                                        ? 'bg-[#c97a2b]/15 text-[#c97a2b] border-[#c97a2b]/30 font-medium'
+                                        : 'bg-[#e5a45b]/15 text-[#e5a45b] border-[#e5a45b]/30 font-medium'
+                                      : isDay
+                                      ? 'border-black/5 text-zinc-600 hover:bg-black/5'
+                                      : 'border-white/5 text-zinc-400 hover:bg-white/10'
+                                  }`}
+                                >
+                                  {preset}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="py-4 text-center text-[12px] font-mono text-zinc-400 italic">
+                            已设置为全天任务
+                          </div>
+                        )}
+
+                        <div className={`mt-3 pt-2 border-t flex justify-end ${isDay ? 'border-black/[0.08]' : 'border-white/[0.08]'}`}>
+                          <button
+                            type="button"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              setShowTimePicker(false);
+                              inputRef.current?.focus();
+                            }}
+                            className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-mono font-medium transition-all cursor-pointer ${
+                              isDay ? 'bg-[#c97a2b] text-white hover:bg-[#b36922]' : 'bg-[#e5a45b] text-zinc-950 hover:bg-[#f0b574]'
+                            }`}
+                          >
+                            <Check size={11} />
+                            <span>确定</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className={`hidden sm:block h-4 w-px mx-0.5 ${isDay ? 'bg-black/10' : 'bg-white/10'}`} />
+                </div>
+              )}
+
+              <input
+                ref={inputRef}
+                type="text"
+                className={`flex-1 bg-transparent border-none text-[13px] py-1 px-1 focus:outline-none min-w-[120px] ${
+                  isDay ? 'text-zinc-800 placeholder:text-zinc-400' : 'text-zinc-100 placeholder:text-zinc-400'
+                }`}
+                placeholder={placeholder}
+                value={value}
+                onChange={handleInputChange}
+                onFocus={() => setIsActive(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSubmit();
+                  }
+                  if (e.key === 'Escape') {
+                    setValue('');
+                    setIsActive(false);
+                    setShowDatePicker(false);
+                    setShowTimePicker(false);
+                    inputRef.current?.blur();
+                  }
+                }}
+              />
+
+              {value.trim().length > 0 && (
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setValue('');
+                    }}
+                    className="p-1 rounded text-zinc-400 hover:text-zinc-600 transition-colors cursor-pointer"
+                    aria-label="清除"
+                  >
+                    <X size={12} />
+                  </button>
+
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSubmit();
+                    }}
+                    className="text-[11px] font-mono font-medium px-2.5 py-1 rounded-lg bg-[#e5a45b]/20 text-[#e5a45b] border border-[#e5a45b]/40 hover:bg-[#e5a45b]/30 transition-colors cursor-pointer"
+                  >
+                    添加 ↵
+                  </button>
+                </div>
+              )}
             </div>
           </div>
-          ${p.title ? `<div class="entry-title">${escapeHtml(p.title)}</div>` : ''}
-          <div class="entry-body">${escapeHtml(p.body)}</div>
-        `;
-        track.appendChild(item);
-      });
-      group.appendChild(track); 
-      tl.appendChild(group);
-    });
+        );
+      };
 
-    if(pinnedArea.classList.contains('active')) renderPinnedInline();
-  }
+      // --- DAY VIEW ---
+      const DayView = ({
+        date,
+        anchor,
+        tasks = [],
+        allTasks,
+        tasksOn,
+        addTask,
+        onAddTask,
+        toggleTask,
+        onToggleTask,
+        deleteTask,
+        onDeleteTask,
+        accentColor: propAccentColor,
+      }) => {
+        const { isDay, accentColor: themeAccentColor } = useTheme();
+        const accentColor = propAccentColor || themeAccentColor;
+        const currentDate = date || anchor || new Date();
+        const handleAddTask = onAddTask || addTask || (() => {});
+        const handleToggleTask = onToggleTask || toggleTask || (() => {});
+        const handleDeleteTask = onDeleteTask || deleteTask || (() => {});
 
-  function escapeHtml(str) {
-    return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  }
+        const iso = toISO(currentDate);
+        const todayISO = toISO(new Date());
+        const currentDateStr = `${currentDate.getFullYear()}.${pad(currentDate.getMonth() + 1)}.${pad(currentDate.getDate())}`;
 
-  function init() {
-    loadLocalEntries();
-    renderTimeline();
-    updateLockStatusUI();
-    checkAppLock();
-    checkAndAutoBackup();
-  }
+        const sourceTasks = allTasks || tasks || tasksOn(iso);
 
-  init();
+        const getTaskTimestamp = (t) => {
+          if (t.date) {
+            const [y, m, d] = t.date.split('-').map(Number);
+            if (y && m && d) {
+              const dateObj = new Date(y, m - 1, d);
+              if (t.time) {
+                const [h, min] = t.time.split(':').map(Number);
+                dateObj.setHours(h || 0, min || 0, 0, 0);
+              } else {
+                dateObj.setHours(9, 0, 0, 0);
+              }
+              return dateObj.getTime();
+            }
+          }
+          if (t.createdAt) {
+            const parsed = new Date(t.createdAt).getTime();
+            if (!isNaN(parsed)) return parsed;
+          }
+          return 0;
+        };
 
-  const themeToggleBtnAction = document.getElementById('themeToggleBtnAction');
-  const themeMeta = document.getElementById('themeColorMeta');
-  const themeSwitch = document.getElementById('themeSwitch');
-  const themeIconSvg = document.getElementById('theme-icon-svg');
+        const getTaskPeriod = (t) => {
+          const taskDate = t.date || (t.createdAt ? toISO(new Date(t.createdAt)) : todayISO);
+          if (taskDate < todayISO) return 'past';
+          if (taskDate > todayISO) return 'future';
+          return 'today';
+        };
 
-  function applyTheme(isDark) {
-    document.body.className = isDark ? 'dark' : 'light'; 
-    // 若处于锁定状态，同步加上 is-locked
-    const savedPin = localStorage.getItem('mutopia_app_pin');
-    if (savedPin) {
-      document.body.classList.add('is-locked');
-    }
+        const timelineTasks = [...sourceTasks].sort((a, b) => getTaskTimestamp(b) - getTaskTimestamp(a));
+        const completedCount = timelineTasks.filter((t) => t.done).length;
 
-    if (themeMeta) themeMeta.setAttribute('content', isDark ? '#000000' : '#ffffff');
-    if (themeSwitch) {
-      if (isDark) themeSwitch.classList.add('active');
-      else themeSwitch.classList.remove('active');
-    }
-    
-    if (themeIconSvg) {
-      if (isDark) {
-        themeIconSvg.innerHTML = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>`;
-      } else {
-        themeIconSvg.innerHTML = `
-          <circle cx="12" cy="12" r="5"></circle>
-          <line x1="12" y1="1" x2="12" y2="3"></line>
-          <line x1="12" y1="21" x2="12" y2="23"></line>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-          <line x1="1" y1="12" x2="3" y2="12"></line>
-          <line x1="21" y1="12" x2="23" y2="12"></line>
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-        `;
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between -mt-2">
+              <div
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-mono border ${
+                  isDay
+                    ? 'bg-black/[0.04] border-black/[0.08] text-zinc-700'
+                    : 'bg-white/[0.03] border-white/[0.08] text-zinc-300'
+                }`}
+              >
+                <Layers size={11} style={{ color: accentColor }} />
+                <span className="tracking-wide">Floating Glass</span>
+              </div>
+
+              <div
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-mono border ${
+                  isDay
+                    ? 'bg-black/[0.04] border-black/[0.08] text-zinc-700'
+                    : 'bg-white/[0.03] border-white/[0.08] text-zinc-300'
+                }`}
+              >
+                <Calendar size={11} style={{ color: accentColor }} />
+                <span className="tracking-wide">{currentDateStr}</span>
+              </div>
+            </div>
+
+            <div
+              className={`rounded-xl p-3 sm:p-6 border relative ${
+                isDay
+                  ? 'bg-white/65 border-black/[0.06] shadow-sm'
+                  : 'bg-white/[0.03] border-white/[0.08]'
+              }`}
+            >
+              <div className={`flex items-center justify-between mb-3 pb-2 border-b ${isDay ? 'border-black/[0.07]' : 'border-white/[0.08]'}`}>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="w-1.5 h-1.5 rounded-full shadow-[0_0_8px_currentColor]"
+                    style={{ backgroundColor: accentColor, color: accentColor }}
+                  />
+                  <span className={`font-mono text-[11px] tracking-wider uppercase font-medium ${isDay ? 'text-zinc-700' : 'text-zinc-300'}`}>
+                    Tasks Timeline
+                  </span>
+                </div>
+
+                <span className={`font-mono text-[11px] ${isDay ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                  {completedCount}/{timelineTasks.length}
+                </span>
+              </div>
+
+              <div className="relative mb-4">
+                <div
+                  className="relative max-h-[360px] sm:max-h-[420px] overflow-y-auto overscroll-contain pr-1 hide-native-scrollbar focus:outline-none"
+                  style={{ WebkitOverflowScrolling: 'touch' }}
+                >
+                  {timelineTasks.length > 0 ? (
+                    <div className="relative space-y-1.5 min-h-[120px] pb-1">
+                      <div className={`absolute left-[7px] top-3 bottom-3 w-[1px] pointer-events-none ${isDay ? 'bg-black/[0.10]' : 'bg-white/[0.08]'}`} />
+
+                      {timelineTasks.map((t) => {
+                        const timeLabel = formatTaskTimestamp(t);
+                        const period = getTaskPeriod(t);
+
+                        return (
+                          <div
+                            key={t.id}
+                            className={`group relative flex items-center justify-between gap-2 sm:gap-4 py-2 px-2.5 sm:px-3 rounded-lg border transition-all duration-150 ${
+                              t.done
+                                ? isDay
+                                  ? 'bg-black/[0.015] border-black/[0.04] opacity-75'
+                                  : 'bg-white/[0.015] border-white/[0.05] opacity-75'
+                                : isDay
+                                ? 'bg-white/80 hover:bg-white border-black/[0.06] shadow-sm'
+                                : 'bg-white/[0.03] hover:bg-white/[0.06] border-white/[0.08]'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
+                              <span
+                                className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full border transition-all z-10 ${
+                                  t.done
+                                    ? isDay
+                                      ? 'bg-zinc-400 border-zinc-400'
+                                      : 'bg-zinc-600 border-zinc-500'
+                                    : period === 'today'
+                                    ? 'border-[#e5a45b] bg-[#e5a45b]'
+                                    : period === 'future'
+                                    ? 'border-sky-500 bg-sky-500'
+                                    : 'border-zinc-400 bg-zinc-400'
+                                }`}
+                                style={!t.done && period === 'today' ? { borderColor: accentColor } : undefined}
+                              />
+                              <span className={`font-mono text-[10.5px] sm:text-[12px] transition-colors tracking-tight select-none ${isDay ? 'text-zinc-600' : 'text-zinc-300'}`}>
+                                {timeLabel}
+                              </span>
+                            </div>
+
+                            <div
+                              onClick={() => handleToggleTask(t.id)}
+                              className="flex-1 min-w-0 px-1 cursor-pointer select-none"
+                            >
+                              <span
+                                className={`text-[13px] sm:text-[14px] leading-snug break-words transition-colors block ${
+                                  t.done
+                                    ? isDay
+                                      ? 'text-zinc-400 line-through font-normal'
+                                      : 'text-zinc-500 line-through font-normal'
+                                    : isDay
+                                    ? 'text-zinc-800 font-normal'
+                                    : 'text-zinc-100 font-normal'
+                                }`}
+                              >
+                                {t.title}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteTask(t.id);
+                                }}
+                                className={`opacity-80 sm:opacity-0 group-hover:opacity-100 p-1.5 sm:p-1 rounded transition-all duration-150 cursor-pointer ${
+                                  isDay
+                                    ? 'text-zinc-400 hover:text-rose-600 hover:bg-rose-500/10'
+                                    : 'text-zinc-500 hover:text-rose-300 hover:bg-rose-500/10'
+                                }`}
+                                aria-label="Delete task"
+                                title="Delete task"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+
+                              <Checkbox
+                                done={t.done}
+                                onClick={() => handleToggleTask(t.id)}
+                                accentColor={accentColor}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div
+                      className={`text-xs italic py-8 px-2 text-center border border-dashed rounded-lg ${
+                        isDay ? 'text-zinc-500 border-black/10' : 'text-zinc-400 border-white/5'
+                      }`}
+                    >
+                      暂无任务，可在下方快速添加
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <QuickAdd
+                allowDateSelection
+                initialDate={iso}
+                placeholder="Add a task… (e.g. 15:00 会议)"
+                onSubmit={(title, chosenDate, chosenTime) => {
+                  const timeMatch = title.match(/\b([01]?[0-9]|2[0-3]):([0-5][0-9])\b/);
+                  const time = chosenTime !== undefined ? chosenTime : (timeMatch ? timeMatch[0] : null);
+                  handleAddTask(chosenDate || iso, title, time);
+                }}
+              />
+            </div>
+          </div>
+        );
+      };
+
+      // --- WEEK VIEW ---
+      const WeekView = ({
+        anchor,
+        setAnchor,
+        onAnchorChange,
+        today,
+        tasksOn,
+        addTask,
+        onAddTask,
+        toggleTask,
+        onToggleTask,
+        deleteTask,
+        onDeleteTask,
+        jumpTo,
+        jumpToDay,
+        accentColor: propAccentColor,
+      }) => {
+        const { isDay, accentColor: themeAccentColor } = useTheme();
+        const accentColor = propAccentColor || themeAccentColor;
+        const [internalAnchor, setInternalAnchor] = useState(anchor || new Date());
+
+        useEffect(() => {
+          if (anchor) setInternalAnchor(anchor);
+        }, [anchor]);
+
+        const currentAnchor = anchor || internalAnchor;
+        const currentToday = today || new Date();
+
+        const handleSetAnchor = (nextDate) => {
+          setInternalAnchor(nextDate);
+          if (setAnchor) setAnchor(nextDate);
+          if (onAnchorChange) onAnchorChange(nextDate);
+        };
+
+        const handleNavigateWeek = (offsetWeeks) => {
+          handleSetAnchor(addDays(currentAnchor, offsetWeeks * 7));
+        };
+
+        const handleGoToCurrentWeek = () => handleSetAnchor(new Date());
+
+        const handleToggleTask = onToggleTask || toggleTask || (() => {});
+        const handleJumpTo = (d) => {
+          if (jumpToDay) jumpToDay(d);
+          else if (jumpTo) jumpTo(d, 'day');
+        };
+
+        const ws = startOfWeek(currentAnchor);
+        const days = Array.from({ length: 7 }, (_, i) => addDays(ws, i));
+        const we = addDays(ws, 6);
+
+        const isCurrentWeek = days.some((d) => isSameDay(d, currentToday));
+
+        const wsYear = ws.getFullYear();
+        const wsMonth = pad(ws.getMonth() + 1);
+        const wsDate = pad(ws.getDate());
+        const weYear = we.getFullYear();
+        const weMonth = pad(we.getMonth() + 1);
+        const weDate = pad(we.getDate());
+
+        const weekRangeStr =
+          wsYear === weYear
+            ? `${wsYear}.${wsMonth}.${wsDate} – ${weMonth}.${weDate}`
+            : `${wsYear}.${wsMonth}.${wsDate} – ${weYear}.${weMonth}.${weDate}`;
+
+        const allWeekTasks = days.flatMap((d) => tasksOn(toISO(d)));
+        const totalTasks = allWeekTasks.length;
+        const completedTasks = allWeekTasks.filter((t) => t.done).length;
+        const completionPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+        return (
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 -mt-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div
+                  className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 py-1 rounded-lg text-[11px] font-mono border transition-all ${
+                    isDay
+                      ? 'bg-black/[0.04] border-black/[0.08] text-zinc-700'
+                      : 'bg-white/[0.03] border-white/[0.08] text-zinc-300'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleNavigateWeek(-1)}
+                    className={`p-1 sm:p-0.5 rounded transition-all cursor-pointer flex items-center justify-center ${
+                      isDay ? 'hover:bg-black/10 text-zinc-600' : 'hover:bg-white/10 text-zinc-400'
+                    }`}
+                    title="上一周"
+                  >
+                    <ChevronLeft size={14} />
+                  </button>
+
+                  <div className="flex items-center gap-1.5 px-0.5">
+                    <Calendar size={11} style={{ color: accentColor }} />
+                    <span className="tracking-wide select-none text-[10.5px] sm:text-[11px]">{weekRangeStr}</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleNavigateWeek(1)}
+                    className={`p-1 sm:p-0.5 rounded transition-all cursor-pointer flex items-center justify-center ${
+                      isDay ? 'hover:bg-black/10 text-zinc-600' : 'hover:bg-white/10 text-zinc-400'
+                    }`}
+                    title="下一周"
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+
+                {!isCurrentWeek && (
+                  <button
+                    type="button"
+                    onClick={handleGoToCurrentWeek}
+                    className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-mono border transition-all cursor-pointer ${
+                      isDay
+                        ? 'bg-black/[0.04] hover:bg-black/[0.08] border-black/[0.08] text-zinc-700'
+                        : 'bg-white/[0.03] hover:bg-white/[0.08] border-white/[0.08] text-zinc-300'
+                    }`}
+                    title="Now"
+                  >
+                    <RotateCcw size={10} style={{ color: accentColor }} />
+                    <span className="tracking-wide select-none">Now</span>
+                  </button>
+                )}
+              </div>
+
+              <div
+                className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-[11px] font-mono border select-none transition-all ${
+                  isDay
+                    ? 'bg-black/[0.04] border-black/[0.08] text-zinc-700'
+                    : 'bg-white/[0.03] border-white/[0.08] text-zinc-300'
+                }`}
+                title={`${completedTasks}/${totalTasks}`}
+              >
+                <CheckCircle2 size={11} style={{ color: accentColor }} />
+                <span className="tracking-wide">
+                  {completedTasks}/{totalTasks}
+                </span>
+
+                <div className={`w-10 sm:w-12 h-1.5 rounded-full overflow-hidden ${isDay ? 'bg-black/10' : 'bg-white/10'}`}>
+                  <div
+                    className="h-full rounded-full transition-all duration-300"
+                    style={{
+                      width: `${completionPercent}%`,
+                      backgroundColor: totalTasks > 0 && completedTasks === totalTasks ? '#10b981' : accentColor,
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-7 gap-2.5">
+              {days.map((d, i) => {
+                const iso = toISO(d);
+                const dayTasks = tasksOn(iso).sort((a, b) => {
+                  if (a.time && b.time) return a.time.localeCompare(b.time);
+                  if (a.time) return -1;
+                  if (b.time) return 1;
+                  return 0;
+                });
+                const isToday = isSameDay(d, currentToday);
+                const isSelectedAnchor = isSameDay(d, currentAnchor);
+                const completedCount = dayTasks.filter((t) => t.done).length;
+
+                return (
+                  <div
+                    key={iso}
+                    className={`flex flex-col min-h-[120px] md:min-h-[300px] p-2.5 sm:p-3 rounded-xl transition-all duration-200 ${
+                      isToday
+                        ? isDay
+                          ? 'bg-[#e5a45b]/[0.10] border border-[#e5a45b]/50 shadow-sm ring-1 ring-[#e5a45b]/40'
+                          : 'bg-[#e5a45b]/[0.08] border border-[#e5a45b]/40 shadow-sm ring-1 ring-[#e5a45b]/30'
+                        : isSelectedAnchor
+                        ? isDay
+                          ? 'bg-white/80 border border-black/15 shadow-sm'
+                          : 'bg-white/[0.04] border border-white/20'
+                        : isDay
+                        ? 'bg-white/55 border border-black/[0.06] hover:bg-white/80'
+                        : 'bg-white/[0.02] border border-white/[0.07] hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleJumpTo(d)}
+                      className={`group text-left pb-1.5 sm:pb-2.5 mb-1.5 sm:mb-2 border-b flex items-center justify-between cursor-pointer w-full ${
+                        isDay ? 'border-black/[0.06]' : 'border-white/[0.06]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 md:flex-col md:items-start md:gap-0">
+                        <span
+                          className={`block text-[11px] font-mono tracking-wider uppercase transition-colors ${
+                            isDay ? 'text-zinc-500 group-hover:text-[#e5a45b]' : 'text-zinc-400 group-hover:text-[#e5a45b]'
+                          }`}
+                        >
+                          {WEEKDAYS[i]}
+                        </span>
+                        <span
+                          className={`inline-flex items-center justify-center font-mono text-[14px] sm:text-[16px] font-semibold ${
+                            isToday ? 'text-[#e5a45b]' : isDay ? 'text-zinc-800' : 'text-zinc-200'
+                          }`}
+                        >
+                          {d.getDate()}日
+                        </span>
+                      </div>
+
+                      {dayTasks.length > 0 && (
+                        <span
+                          className={`font-mono text-[10px] px-1.5 py-0.5 rounded-full border ${
+                            isDay ? 'bg-black/[0.04] text-zinc-600 border-black/[0.06]' : 'bg-white/5 text-zinc-400 border-white/5'
+                          }`}
+                        >
+                          {completedCount}/{dayTasks.length}
+                        </span>
+                      )}
+                    </button>
+
+                    <div className="flex-1 space-y-1 overflow-y-auto max-h-[220px] md:max-h-[420px] pr-0.5">
+                      {dayTasks.map((t) => (
+                        <TaskRow
+                          key={t.id}
+                          task={t}
+                          onToggle={handleToggleTask}
+                          accentColor={accentColor}
+                        />
+                      ))}
+
+                      {dayTasks.length === 0 && (
+                        <div className="h-10 md:h-16 flex items-center justify-center text-[11px] italic text-zinc-400">
+                          无安排
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      };
+
+      // --- MONTH VIEW ---
+      const MonthView = ({
+        anchor,
+        setAnchor,
+        onAnchorChange,
+        today,
+        tasksOn,
+        jumpTo,
+        accentColor: propAccentColor,
+      }) => {
+        const { isDay, accentColor: themeAccentColor } = useTheme();
+        const accentColor = propAccentColor || themeAccentColor;
+        const [internalAnchor, setInternalAnchor] = useState(anchor || new Date());
+
+        useEffect(() => {
+          if (anchor) setInternalAnchor(anchor);
+        }, [anchor]);
+
+        const currentAnchor = anchor || internalAnchor;
+        const currentToday = today || new Date();
+        const todayISO = toISO(currentToday);
+
+        const handleSetAnchor = (nextDate) => {
+          setInternalAnchor(nextDate);
+          if (setAnchor) setAnchor(nextDate);
+          if (onAnchorChange) onAnchorChange(nextDate);
+        };
+
+        const handleNavigateMonth = (offsetMonths) => {
+          handleSetAnchor(addMonths(currentAnchor, offsetMonths));
+        };
+
+        const handleGoToCurrentMonth = () => handleSetAnchor(new Date());
+
+        const year = currentAnchor.getFullYear();
+        const month = currentAnchor.getMonth();
+        const isCurrentMonth = currentToday.getFullYear() === year && currentToday.getMonth() === month;
+
+        const first = new Date(year, month, 1);
+        const firstWeekday = (first.getDay() + 6) % 7;
+        const gridStart = addDays(first, -firstWeekday);
+        const cells = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
+
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        let totalTasks = 0;
+        let completedTasks = 0;
+        for (let day = 1; day <= daysInMonth; day++) {
+          const d = new Date(year, month, day);
+          const dayTasks = tasksOn(toISO(d));
+          totalTasks += dayTasks.length;
+          completedTasks += dayTasks.filter((t) => t.done).length;
+        }
+        const completionPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+        const getTaskDotColor = (t, cellISO) => {
+          if (t.done) return 'bg-emerald-500/80';
+          const taskDate = t.date || cellISO;
+          if (taskDate < todayISO) return 'bg-rose-500/80';
+          if (taskDate === todayISO) return 'bg-amber-500/80';
+          return 'bg-sky-500/80';
+        };
+
+        return (
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 -mt-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div
+                  className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 py-1 rounded-lg text-[11px] font-mono border transition-all ${
+                    isDay
+                      ? 'bg-black/[0.04] border-black/[0.08] text-zinc-700'
+                      : 'bg-white/[0.03] border-white/[0.08] text-zinc-300'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleNavigateMonth(-1)}
+                    className={`p-1 sm:p-0.5 rounded transition-all cursor-pointer flex items-center justify-center ${
+                      isDay ? 'hover:bg-black/10 text-zinc-600' : 'hover:bg-white/10 text-zinc-400'
+                    }`}
+                    title="上一月"
+                  >
+                    <ChevronLeft size={14} />
+                  </button>
+
+                  <div className="flex items-center gap-1.5 px-0.5">
+                    <Calendar size={11} style={{ color: accentColor }} />
+                    <span className="tracking-wide select-none text-[11px]">
+                      {year}.{pad(month + 1)} · {MONTHS_SHORT[month]}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleNavigateMonth(1)}
+                    className={`p-1 sm:p-0.5 rounded transition-all cursor-pointer flex items-center justify-center ${
+                      isDay ? 'hover:bg-black/10 text-zinc-600' : 'hover:bg-white/10 text-zinc-400'
+                    }`}
+                    title="下一月"
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+
+                {!isCurrentMonth && (
+                  <button
+                    type="button"
+                    onClick={handleGoToCurrentMonth}
+                    className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-mono border transition-all cursor-pointer ${
+                      isDay
+                        ? 'bg-black/[0.04] hover:bg-black/[0.08] border-black/[0.08] text-zinc-700'
+                        : 'bg-white/[0.03] hover:bg-white/[0.08] border-white/[0.08] text-zinc-300'
+                    }`}
+                    title="Now"
+                  >
+                    <RotateCcw size={10} style={{ color: accentColor }} />
+                    <span className="tracking-wide select-none">Now</span>
+                  </button>
+                )}
+              </div>
+
+              <div
+                className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-[11px] font-mono border select-none transition-all ${
+                  isDay
+                    ? 'bg-black/[0.04] border-black/[0.08] text-zinc-700'
+                    : 'bg-white/[0.03] border-white/[0.08] text-zinc-300'
+                }`}
+                title={`${completedTasks}/${totalTasks}`}
+              >
+                <CheckCircle2 size={11} style={{ color: accentColor }} />
+                <span className="tracking-wide">
+                  {completedTasks}/{totalTasks}
+                </span>
+
+                <div className={`w-10 sm:w-12 h-1.5 rounded-full overflow-hidden ${isDay ? 'bg-black/10' : 'bg-white/10'}`}>
+                  <div
+                    className="h-full rounded-full transition-all duration-300"
+                    style={{
+                      width: `${completionPercent}%`,
+                      backgroundColor: totalTasks > 0 && completedTasks === totalTasks ? '#10b981' : accentColor,
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1.5 sm:space-y-2">
+              <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center pb-1">
+                {WEEKDAYS.map((w) => (
+                  <span key={w} className={`text-[10px] sm:text-[11px] font-mono tracking-wider uppercase font-medium ${isDay ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                    {w}
+                  </span>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                {cells.map((d) => {
+                  const iso = toISO(d);
+                  const inMonth = d.getMonth() === month;
+                  const dayTasks = tasksOn(iso);
+                  const isToday = isSameDay(d, currentToday);
+                  const isSelected = isSameDay(d, currentAnchor);
+                  const completedCount = dayTasks.filter((t) => t.done).length;
+                  const allCompleted = dayTasks.length > 0 && completedCount === dayTasks.length;
+
+                  return (
+                    <button
+                      key={iso}
+                      type="button"
+                      onClick={() => jumpTo(d, 'day')}
+                      className={`group relative text-left p-1 sm:p-2 rounded-lg sm:rounded-xl h-[64px] sm:h-[105px] flex flex-col justify-between transition-all duration-150 cursor-pointer overflow-hidden ${
+                        !inMonth
+                          ? isDay
+                            ? 'opacity-30 bg-black/[0.015] border border-black/[0.03]'
+                            : 'opacity-30 bg-white/[0.01] border border-white/[0.03]'
+                          : isToday
+                          ? isDay
+                            ? 'bg-[#e5a45b]/[0.12] border border-[#e5a45b]/50 shadow-sm ring-1 ring-[#e5a45b]/40'
+                            : 'bg-[#e5a45b]/[0.08] border border-[#e5a45b]/40 shadow-sm ring-1 ring-[#e5a45b]/30'
+                          : isSelected
+                          ? isDay
+                            ? 'bg-white/90 border border-black/20'
+                            : 'bg-white/[0.06] border border-white/25'
+                          : isDay
+                          ? 'bg-white/55 border border-black/[0.06] hover:bg-white/80'
+                          : 'bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.05]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <span
+                          className={`w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center font-mono text-[11px] sm:text-[12px] rounded-full font-medium ${
+                            isToday
+                              ? 'bg-[#e5a45b] text-zinc-950 font-bold'
+                              : isDay
+                              ? 'text-zinc-700'
+                              : 'text-zinc-200'
+                          }`}
+                        >
+                          {d.getDate()}
+                        </span>
+
+                        {allCompleted ? (
+                          <span className="text-emerald-500 text-[10px]">
+                            <CheckCircle2 size={10} />
+                          </span>
+                        ) : dayTasks.length > 0 ? (
+                          <span className={`font-mono text-[9px] sm:text-[10px] ${isDay ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                            {completedCount}/{dayTasks.length}
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <div className="flex-1 w-full mt-1 sm:mt-2 flex flex-wrap content-start gap-1 overflow-hidden">
+                        {dayTasks.slice(0, 8).map((t) => (
+                          <span
+                            key={t.id}
+                            title={t.title}
+                            className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0 transition-transform ${getTaskDotColor(t, iso)}`}
+                          />
+                        ))}
+                        {dayTasks.length > 8 && (
+                          <span className={`font-mono text-[8px] sm:text-[9px] self-center pl-0.5 ${isDay ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                            +{dayTasks.length - 8}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      // --- YEAR VIEW ---
+      const YearView = ({
+        anchor,
+        setAnchor,
+        onAnchorChange,
+        today,
+        tasksOn,
+        jumpTo,
+        setView,
+        accentColor: propAccentColor,
+      }) => {
+        const { isDay, accentColor: themeAccentColor } = useTheme();
+        const accentColor = propAccentColor || themeAccentColor;
+        const [internalAnchor, setInternalAnchor] = useState(anchor || new Date());
+
+        useEffect(() => {
+          if (anchor) setInternalAnchor(anchor);
+        }, [anchor]);
+
+        const currentAnchor = anchor || internalAnchor;
+        const currentToday = today || new Date();
+        const year = currentAnchor.getFullYear();
+        const isCurrentYear = currentToday.getFullYear() === year;
+
+        const handleSetAnchor = (nextDate) => {
+          setInternalAnchor(nextDate);
+          if (setAnchor) setAnchor(nextDate);
+          if (onAnchorChange) onAnchorChange(nextDate);
+        };
+
+        const handleNavigateYear = (offsetYears) => {
+          handleSetAnchor(addYears(currentAnchor, offsetYears));
+        };
+
+        const handleGoToCurrentYear = () => handleSetAnchor(new Date());
+
+        let yearTotalTasks = 0;
+        let yearCompletedTasks = 0;
+        for (let m = 0; m < 12; m++) {
+          const daysInMonth = new Date(year, m + 1, 0).getDate();
+          for (let day = 1; day <= daysInMonth; day++) {
+            const d = new Date(year, m, day);
+            const dayTasks = tasksOn(toISO(d));
+            yearTotalTasks += dayTasks.length;
+            yearCompletedTasks += dayTasks.filter((t) => t.done).length;
+          }
+        }
+        const yearPercent = yearTotalTasks > 0 ? Math.round((yearCompletedTasks / yearTotalTasks) * 100) : 0;
+
+        const getDaySquareColor = (iso, tasks) => {
+          const count = tasks.length;
+          if (count === 0) {
+            return isDay ? 'bg-black/[0.04]' : 'bg-white/[0.04]';
+          }
+          if (count <= 5) {
+            return isDay ? 'bg-[#e5a45b]/30' : 'bg-[#e5a45b]/25';
+          }
+          if (count <= 10) {
+            return isDay ? 'bg-[#e5a45b]/55' : 'bg-[#e5a45b]/50';
+          }
+          if (count <= 15) {
+            return isDay ? 'bg-[#e5a45b]/80' : 'bg-[#e5a45b]/75';
+          }
+          return isDay ? 'bg-[#d9872e]' : 'bg-[#e5a45b]';
+        };
+
+        return (
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 -mt-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div
+                  className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 py-1 rounded-lg text-[11px] font-mono border transition-all ${
+                    isDay
+                      ? 'bg-black/[0.04] border-black/[0.08] text-zinc-700'
+                      : 'bg-white/[0.03] border-white/[0.08] text-zinc-300'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleNavigateYear(-1)}
+                    className={`p-1 sm:p-0.5 rounded transition-all cursor-pointer flex items-center justify-center ${
+                      isDay ? 'hover:bg-black/10 text-zinc-600' : 'hover:bg-white/10 text-zinc-400'
+                    }`}
+                    title="上一年"
+                  >
+                    <ChevronLeft size={14} />
+                  </button>
+
+                  <div className="flex items-center gap-1.5 px-0.5">
+                    <Calendar size={11} style={{ color: accentColor }} />
+                    <span className="tracking-wide select-none">{year}</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleNavigateYear(1)}
+                    className={`p-1 sm:p-0.5 rounded transition-all cursor-pointer flex items-center justify-center ${
+                      isDay ? 'hover:bg-black/10 text-zinc-600' : 'hover:bg-white/10 text-zinc-400'
+                    }`}
+                    title="下一年"
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+
+                {!isCurrentYear && (
+                  <button
+                    type="button"
+                    onClick={handleGoToCurrentYear}
+                    className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-mono border transition-all cursor-pointer ${
+                      isDay
+                        ? 'bg-black/[0.04] hover:bg-black/[0.08] border-black/[0.08] text-zinc-700'
+                        : 'bg-white/[0.03] hover:bg-white/[0.08] border-white/[0.08] text-zinc-300'
+                    }`}
+                    title="Now"
+                  >
+                    <RotateCcw size={10} style={{ color: accentColor }} />
+                    <span className="tracking-wide select-none">Now</span>
+                  </button>
+                )}
+              </div>
+
+              <div
+                className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-[11px] font-mono border select-none transition-all ${
+                  isDay
+                    ? 'bg-black/[0.04] border-black/[0.08] text-zinc-700'
+                    : 'bg-white/[0.03] border-white/[0.08] text-zinc-300'
+                }`}
+                title={`${yearCompletedTasks}/${yearTotalTasks}`}
+              >
+                <CheckCircle2 size={11} style={{ color: accentColor }} />
+                <span className="tracking-wide">
+                  {yearCompletedTasks}/{yearTotalTasks}
+                </span>
+
+                <div className={`w-10 sm:w-12 h-1.5 rounded-full overflow-hidden ${isDay ? 'bg-black/10' : 'bg-white/10'}`}>
+                  <div
+                    className="h-full rounded-full transition-all duration-300"
+                    style={{
+                      width: `${yearPercent}%`,
+                      backgroundColor: accentColor,
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              {MONTHS.map((name, m) => {
+                const first = new Date(year, m, 1);
+                const firstWeekday = (first.getDay() + 6) % 7;
+                const daysInMonth = new Date(year, m + 1, 0).getDate();
+                const cells = [
+                  ...Array(firstWeekday).fill(null),
+                  ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+                ];
+
+                let monthTotalTasks = 0;
+                for (let day = 1; day <= daysInMonth; day++) {
+                  const d = new Date(year, m, day);
+                  monthTotalTasks += tasksOn(toISO(d)).length;
+                }
+
+                const isCurrentMonth = currentToday.getFullYear() === year && currentToday.getMonth() === m;
+
+                return (
+                  <div
+                    key={name}
+                    className={`p-3 rounded-xl border transition-all duration-200 ${
+                      isCurrentMonth
+                        ? isDay
+                          ? 'bg-[#e5a45b]/[0.10] border border-[#e5a45b]/45 shadow-sm'
+                          : 'bg-[#e5a45b]/[0.05] border border-[#e5a45b]/35 shadow-sm'
+                        : isDay
+                        ? 'bg-white/55 border-black/[0.06] hover:bg-white/80'
+                        : 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    <div className={`flex items-center justify-between mb-2 pb-1.5 border-b ${isDay ? 'border-black/[0.05]' : 'border-white/[0.05]'}`}>
+                      <button
+                        type="button"
+                        className="group flex items-baseline gap-1.5 text-left cursor-pointer"
+                        onClick={() => {
+                          handleSetAnchor(new Date(year, m, 1));
+                          setView('month');
+                        }}
+                      >
+                        <span className={`font-serif text-[14px] sm:text-[15px] font-medium transition-colors ${isDay ? 'text-zinc-800' : 'text-zinc-100'}`}>
+                          {name}
+                        </span>
+                      </button>
+
+                      {monthTotalTasks > 0 && (
+                        <span
+                          className="font-mono text-[9.5px] px-1.5 py-0.5 rounded border"
+                          style={{
+                            color: accentColor,
+                            backgroundColor: isDay ? 'rgba(229, 164, 91, 0.12)' : 'rgba(229, 164, 91, 0.1)',
+                            borderColor: isDay ? 'rgba(229, 164, 91, 0.3)' : 'rgba(229, 164, 91, 0.25)',
+                          }}
+                        >
+                          {monthTotalTasks}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1">
+                      {cells.map((day, idx) => {
+                        if (day === null) {
+                          return <div key={`empty-${idx}`} className="aspect-square" />;
+                        }
+
+                        const d = new Date(year, m, day);
+                        const iso = toISO(d);
+                        const tasksForDay = tasksOn(iso);
+                        const count = tasksForDay.length;
+                        const isToday = isSameDay(d, currentToday);
+                        const cellBg = getDaySquareColor(iso, tasksForDay);
+
+                        return (
+                          <button
+                            key={iso}
+                            type="button"
+                            onClick={() => jumpTo(d, 'day')}
+                            title={`${iso}${count > 0 ? ` (${count} tasks)` : ''}`}
+                            className={`aspect-square rounded-[3px] transition-all cursor-pointer relative group ${cellBg} ${
+                              isToday ? (isDay ? 'ring-1 ring-black/60' : 'ring-1 ring-white/70') : ''
+                            }`}
+                          >
+                            {isToday && (
+                              <span className={`absolute inset-0 m-auto w-1 h-1 rounded-full ${isDay ? 'bg-black/75' : 'bg-white/90'}`} />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      };
+
+      // --- AMBIENT LIGHTING COMPONENT ---
+      const AmbientLighting = ({ environment, mousePos, intensity }) => {
+        const lightX = 50 + mousePos.x * 35;
+        const lightY = 40 + mousePos.y * 30;
+
+        return (
+          <>
+            <div
+              className="absolute -inset-10 rounded-[48px] pointer-events-none transition-all duration-500 ease-out z-[-1]"
+              style={{
+                background: `radial-gradient(ellipse 65% 55% at ${lightX}% ${lightY}%, ${environment.ambientColor} 0%, transparent 70%)`,
+                filter: 'blur(54px)',
+                opacity: 0.55 * intensity,
+              }}
+            />
+            <div
+              className="absolute -top-32 -right-24 w-96 h-96 rounded-full pointer-events-none transition-opacity duration-700 z-[-1]"
+              style={{
+                background: environment.ambientColor,
+                filter: 'blur(80px)',
+                opacity: 0.25 * intensity,
+              }}
+            />
+          </>
+        );
+      };
+
+      // --- SPATIAL BACKGROUND COMPONENT ---
+      const SpatialBackground = ({ environment, blurAmount }) => {
+        const canvasRef = useRef(null);
+        const isMorning = environment.theme === 'light';
+
+        useEffect(() => {
+          const canvas = canvasRef.current;
+          if (!canvas) return;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return;
+
+          let animId;
+          let width = (canvas.width = window.innerWidth);
+          let height = (canvas.height = window.innerHeight);
+
+          const handleResize = () => {
+            if (!canvas) return;
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+          };
+          window.addEventListener('resize', handleResize);
+
+          const particleCount = 25;
+          const particles = Array.from({ length: particleCount }, () => ({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            radius: Math.random() * 2 + 0.6,
+            vx: (Math.random() - 0.5) * 0.25,
+            vy: -Math.random() * 0.35 - 0.1,
+            alpha: Math.random() * 0.5 + 0.2,
+            pulseSpeed: Math.random() * 0.02 + 0.01,
+            pulsePhase: Math.random() * Math.PI * 2,
+          }));
+
+          let frame = 0;
+          const render = () => {
+            frame++;
+            ctx.clearRect(0, 0, width, height);
+
+            const isWarm = environment.theme === 'golden';
+            const isDay = environment.theme === 'light';
+            const baseR = isWarm ? 229 : isDay ? 255 : 160;
+            const baseG = isWarm ? 164 : isDay ? 238 : 190;
+            const baseB = isWarm ? 91 : isDay ? 210 : 255;
+
+            particles.forEach((p) => {
+              p.x += p.vx;
+              p.y += p.vy;
+
+              if (p.x < 0) p.x = width;
+              if (p.x > width) p.x = 0;
+              if (p.y < 0) p.y = height;
+              if (p.y > height) p.y = 0;
+
+              const currentAlpha = p.alpha * (0.6 + 0.4 * Math.sin(frame * p.pulseSpeed + p.pulsePhase));
+
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+              ctx.fillStyle = `rgba(${baseR}, ${baseG}, ${baseB}, ${currentAlpha})`;
+              ctx.shadowBlur = 8;
+              ctx.shadowColor = `rgba(${baseR}, ${baseG}, ${baseB}, ${currentAlpha * 0.8})`;
+              ctx.fill();
+            });
+
+            animId = requestAnimationFrame(render);
+          };
+
+          render();
+
+          return () => {
+            cancelAnimationFrame(animId);
+            window.removeEventListener('resize', handleResize);
+          };
+        }, [environment.theme]);
+
+        return (
+          <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 select-none">
+            <div className="absolute inset-0">
+              <img
+                src="./modern_spatial_room_1789282212504.jpg"
+                onError={(e) => {
+                  if (!e.target.dataset.triedSrc) {
+                    e.target.dataset.triedSrc = '1';
+                    e.target.src = './src/assets/images/modern_spatial_room_1789282212504.jpg';
+                  }
+                }}
+                alt="Spatial Architectural Room"
+                className="w-full h-full object-cover object-center transition-all duration-1000 ease-in-out scale-[1.02]"
+                style={{
+                  filter: isMorning
+                    ? `blur(${blurAmount}px) brightness(1.06) contrast(1.02) saturate(1.0)`
+                    : `blur(${blurAmount}px) brightness(0.88) contrast(1.02) saturate(1.12)`,
+                }}
+              />
+
+              <div
+                className={`absolute inset-0 transition-opacity duration-1000 pointer-events-none ${
+                  isMorning ? 'opacity-100' : 'opacity-0'
+                }`}
+                style={{
+                  background: `
+                    radial-gradient(ellipse 110% 90% at 35% 15%, rgba(255, 255, 255, 0.25) 0%, rgba(225, 238, 250, 0.12) 45%, transparent 80%),
+                    linear-gradient(to bottom, rgba(250, 252, 255, 0.15) 0%, rgba(240, 245, 252, 0.05) 50%, rgba(215, 230, 245, 0.12) 100%)
+                  `,
+                  mixBlendMode: 'screen',
+                }}
+              />
+
+              <div
+                className={`absolute inset-0 transition-opacity duration-1000 pointer-events-none ${
+                  isMorning ? 'opacity-0' : 'opacity-100'
+                }`}
+                style={{
+                  background: `radial-gradient(circle at 75% 25%, rgba(215, 185, 150, 0.12) 0%, rgba(15, 18, 22, 0.60) 75%)`,
+                }}
+              />
+
+              <div
+                className={`absolute inset-0 transition-all duration-1000 pointer-events-none ${
+                  isMorning
+                    ? 'bg-[radial-gradient(ellipse_at_center,transparent_60%,rgba(100,125,150,0.12)_100%)]'
+                    : 'bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(5,7,9,0.72)_100%)]'
+                }`}
+              />
+            </div>
+
+            <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-65" />
+          </div>
+        );
+      };
+
+      // --- MAIN APPLICATION INNER ---
+      function DwmyAppInner() {
+        const { tasks, setTasks, loaded } = useTasks();
+        const [view, setView] = useState('day');
+        const [anchor, setAnchor] = useState(new Date());
+
+        const { isDay, toggleTheme, accentColor } = useTheme();
+
+        const currentEnv = isDay
+          ? {
+              id: 'morning-sunlight',
+              name: '早晨 · Morning Pavilion',
+              ambientColor: 'rgba(255, 255, 255, 0.40)',
+              ambientAccent: '#c97a2b',
+              theme: 'light',
+            }
+          : {
+              id: 'golden-dusk',
+              name: '傍晚 · Dusk Pavilion',
+              ambientColor: 'rgba(235, 225, 210, 0.10)',
+              ambientAccent: '#d89c56',
+              theme: 'golden',
+            };
+
+        const blurAmount = 3;
+        const lightIntensity = isDay ? 0.7 : 0.85;
+        const [isMaximized, setIsMaximized] = useState(false);
+        const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+        const addTask = useCallback((dateISO, title, time = null) => {
+          const now = new Date();
+          const defaultTime = time || `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+          setTasks((prev) => [
+            ...prev,
+            {
+              id: uid(),
+              date: dateISO,
+              title,
+              time: defaultTime,
+              createdAt: now.toISOString(),
+              done: false,
+            },
+          ]);
+        }, [setTasks]);
+
+        const toggleTask = useCallback((id) => {
+          setTasks((prev) => {
+            const target = prev.find((t) => t.id === id);
+            if (target) {
+              if (!target.done) {
+                soundManager.playCompleteSound();
+              } else {
+                soundManager.playUncheckSound();
+              }
+            }
+            return prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
+          });
+        }, [setTasks]);
+
+        const deleteTask = useCallback((id) => {
+          setTasks((prev) => prev.filter((t) => t.id !== id));
+        }, [setTasks]);
+
+        const tasksOn = useCallback((iso) => {
+          return tasks.filter((t) => t.date === iso);
+        }, [tasks]);
+
+        const jumpTo = (date, targetView = 'day') => {
+          setAnchor(date);
+          setView(targetView);
+        };
+
+        const handleMouseMove = (e) => {
+          const width = window.innerWidth;
+          const height = window.innerHeight;
+          const normX = (e.clientX - width / 2) / (width / 2);
+          const normY = (e.clientY - height / 2) / (height / 2);
+          setMousePos({ x: normX, y: normY });
+        };
+
+        const handleMouseLeave = () => setMousePos({ x: 0, y: 0 });
+
+        const reflectionX = Math.round(50 + mousePos.x * 25);
+        const reflectionY = Math.round(35 + mousePos.y * 20);
+
+        return (
+          <div
+            id="spatial-viewport"
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+            className={`relative min-h-screen w-full overflow-x-hidden flex flex-col items-center justify-start sm:justify-center p-2 sm:p-6 md:p-12 select-text transition-colors duration-700 ${
+              isDay ? 'bg-[#c5d3e0]' : 'bg-[#0b0e11]'
+            }`}
+          >
+            <SpatialBackground environment={currentEnv} blurAmount={blurAmount} />
+
+            <div
+              id="spatial-scene"
+              className="relative z-10 w-full max-w-7xl mx-auto flex items-start justify-center py-2 sm:py-6 pb-6"
+            >
+              <div
+                id="floating-planner-window"
+                className={`relative transition-all duration-300 ease-out w-full ${
+                  isMaximized ? 'max-w-6xl' : 'max-w-4xl'
+                }`}
+              >
+                <AmbientLighting
+                  environment={currentEnv}
+                  mousePos={mousePos}
+                  intensity={lightIntensity}
+                />
+
+                <div
+                  className="relative rounded-2xl sm:rounded-3xl overflow-hidden backdrop-blur-2xl transition-all duration-500"
+                  style={{
+                    backgroundColor: isDay ? 'rgba(255, 255, 255, 0.62)' : 'rgba(15, 18, 22, 0.72)',
+                    border: isDay ? '1px solid rgba(255, 255, 255, 0.78)' : '1px solid rgba(255, 255, 255, 0.20)',
+                    boxShadow: isDay
+                      ? `
+                        0 20px 50px -10px rgba(15, 28, 48, 0.15),
+                        inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.95)
+                      `
+                      : `
+                        0 25px 60px -15px rgba(0, 0, 0, 0.75),
+                        inset 0 1px 2px 0 rgba(255, 255, 255, 0.30)
+                      `,
+                  }}
+                >
+                  <div
+                    className="absolute inset-0 pointer-events-none transition-opacity duration-300"
+                    style={{
+                      background: isDay
+                        ? `radial-gradient(circle 700px at ${reflectionX}% ${reflectionY}%, rgba(255, 255, 255, 0.40) 0%, rgba(255, 255, 255, 0.06) 45%, transparent 75%)`
+                        : `radial-gradient(circle 650px at ${reflectionX}% ${reflectionY}%, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.01) 40%, transparent 75%)`,
+                    }}
+                  />
+
+                  <div className={`relative p-3.5 sm:p-8 md:p-10 transition-colors duration-200 ${isDay ? 'text-zinc-800' : 'text-[#ede7d8]'}`}>
+                    {/* Header */}
+                    <div className={`flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-3 sm:pb-5 mb-4 sm:mb-7 border-b ${isDay ? 'border-black/[0.08]' : 'border-white/10'}`}>
+                      <div className="flex items-center justify-between sm:justify-start gap-3.5">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-rose-500/80 border border-rose-400/40" />
+                          <span
+                            className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full border"
+                            style={{
+                              backgroundColor: accentColor,
+                              borderColor: 'rgba(229, 164, 91, 0.5)',
+                            }}
+                          />
+                          <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500/80 border border-emerald-400/40" />
+                        </div>
+
+                        <div className={`h-4 w-px mx-1 ${isDay ? 'bg-black/15' : 'bg-white/15'}`} />
+
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="text-2xl sm:text-4xl tracking-wide select-none transition-colors inline-flex items-baseline"
+                            style={{ color: accentColor }}
+                          >
+                            <span style={{ fontFamily: "'royal-maison', 'Royal Maison', cursive, sans-serif" }}>D</span>
+                            <span style={{ fontFamily: "'Halimun', 'halimun', cursive, sans-serif" }}>wmy</span>
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={toggleTheme}
+                          className={`p-1.5 rounded-full transition-colors ml-auto sm:ml-2 ${
+                            isDay ? 'bg-black/5 text-zinc-700 hover:bg-black/10' : 'bg-white/10 text-zinc-300 hover:bg-white/20'
+                          }`}
+                          title="切换主题模式"
+                        >
+                          {isDay ? <Moon size={14} /> : <Sun size={14} />}
+                        </button>
+                      </div>
+
+                      {/* View selector */}
+                      <div
+                        className={`flex items-center justify-between sm:justify-center gap-1 p-1 rounded-full backdrop-blur-md transition-colors w-full sm:w-auto ${
+                          isDay ? 'bg-black/[0.05]' : 'bg-zinc-800/50'
+                        }`}
+                      >
+                        {['day', 'week', 'month', 'year'].map((v) => (
+                          <button
+                            key={v}
+                            type="button"
+                            onClick={() => setView(v)}
+                            className={`flex-1 sm:flex-none px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-[11px] sm:text-xs uppercase tracking-wider font-mono transition-all duration-200 cursor-pointer text-center ${
+                              view === v
+                                ? isDay
+                                  ? 'bg-[#c97a2b]/15 text-[#c97a2b] font-medium shadow-sm'
+                                  : 'bg-[#e5a45b]/15 text-[#e5a45b] font-medium shadow-sm'
+                                : isDay
+                                ? 'text-zinc-600 hover:text-zinc-950'
+                                : 'text-zinc-400 hover:text-white'
+                            }`}
+                          >
+                            {v === 'day' ? '日' : v === 'week' ? '周' : v === 'month' ? '月' : '年'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* View rendering */}
+                    {view === 'day' && (
+                      <DayView
+                        anchor={anchor}
+                        tasksOn={tasksOn}
+                        onAddTask={addTask}
+                        onToggleTask={toggleTask}
+                        onDeleteTask={deleteTask}
+                      />
+                    )}
+                    {view === 'week' && (
+                      <WeekView
+                        anchor={anchor}
+                        setAnchor={setAnchor}
+                        tasksOn={tasksOn}
+                        onToggleTask={toggleTask}
+                        jumpToDay={(d) => jumpTo(d, 'day')}
+                      />
+                    )}
+                    {view === 'month' && (
+                      <MonthView
+                        anchor={anchor}
+                        setAnchor={setAnchor}
+                        tasksOn={tasksOn}
+                        jumpTo={(d) => jumpTo(d, 'day')}
+                      />
+                    )}
+                    {view === 'year' && (
+                      <YearView
+                        anchor={anchor}
+                        setAnchor={setAnchor}
+                        tasksOn={tasksOn}
+                        jumpTo={(d) => jumpTo(d, 'day')}
+                        setView={setView}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
       }
-    }
-  }
 
-  themeToggleBtnAction.onclick = () => {
-    const isNextDark = !document.body.classList.contains('dark');
-    applyTheme(isNextDark);
-    localStorage.setItem('user_theme_preference', isNextDark ? 'dark' : 'light');
-    showToast(isNextDark ? "切换至暗夜模式" : "切换至日间模式");
-  };
+      function App() {
+        return (
+          <ThemeProvider>
+            <DwmyAppInner />
+          </ThemeProvider>
+        );
+      }
 
-  const savedTheme = localStorage.getItem('user_theme_preference');
-  applyTheme(savedTheme === 'dark');
-</script>
-</body>
+      const rootElement = document.getElementById('root');
+      const root = ReactDOM.createRoot(rootElement);
+      root.render(<App />);
+    </script>
+  </body>
 </html>
